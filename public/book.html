@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Room - Grand Palace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom, rgba(15, 17, 21, 0.6), var(--bg-dark)), url('/images/standard.jpg') center/cover;
+            padding: 2rem;
+        }
+        .auth-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            padding: 3rem 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .auth-box h2 { color: var(--primary); margin-bottom: 2rem; }
+        .input-group { text-align: left; margin-bottom: 1.5rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; color: #ddd; }
+        .input-group input { 
+            width: 100%; padding: 1rem; background: rgba(0,0,0,0.4); 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; font-family: inherit; 
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <a href="/" style="text-decoration: none; display: block; text-align: center;"><div class="logo" style="margin-bottom: 1rem;">Grand Palace</div></a>
+            <div class="booking-wrapper">
+        <div class="booking-card" style="max-width: 900px; width: 100%;">
+            <h2 style="text-align:center; color:var(--primary); margin-bottom: 2rem;">Chi Tiết Đặt Phòng</h2>
+            
+            <div style="display:flex; flex-wrap: wrap; gap: 2rem;">
+                
+                <!-- Left: Booking Form -->
+                <div style="flex: 2; min-width: 300px;">
+                    <h3 style="margin-bottom: 1rem;">1. Thông tin liên hệ</h3>
+                    <form id="booking-form">
+                        <div class="input-group">
+                            <label>Họ và tên người đại diện *</label>
+                            <input type="text" id="guest-name" required placeholder="Nhập họ và tên đầy đủ...">
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <div class="input-group" style="flex:1">
+                                <label>Địa chỉ Email *</label>
+                                <input type="email" id="guest-email" required placeholder="Email xác nhận...">
+                            </div>
+                            <div class="input-group" style="flex:1">
+                                <label>Số điện thoại *</label>
+                                <input type="tel" id="guest-phone" required placeholder="SĐT liên hệ...">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Quốc tịch</label>
+                            <select id="guest-nation">
+                                <option value="VN">Việt Nam</option>
+                                <option value="US">Mỹ (United States)</option>
+                                <option value="KR">Hàn Quốc (South Korea)</option>
+                                <option value="JP">Nhật Bản (Japan)</option>
+                                <option value="OTHER">Khác</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Yêu cầu đặc biệt (Không bắt buộc)</label>
+                            <textarea id="guest-request" rows="3" placeholder="Ví dụ: Cần phòng hút thuốc, yêu cầu nôi em bé, v.v..." style="width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; padding: 1rem; border-radius: 4px;"></textarea>
+                        </div>
+
+                        <div id="msg" style="margin-bottom:1rem; font-weight:600;"></div>
+                        <button type="submit" id="confirm-btn" class="btn btn-primary" style="width:100%; font-size: 1.1rem; padding: 1rem;">Xác nhận & Đặt Phòng</button>
+                    </form>
+                </div>
+
+                <!-- Right: Summary -->
+                <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <h3 style="margin-bottom: 1rem; border-bottom: 1px solid #444; padding-bottom: 0.5rem;">2. Tóm tắt Đơn Đặt Trước</h3>
+                    <div id="room-info" style="font-size: 1rem; line-height: 1.8; color: #ccc;">
+                        Đang tải thông tin...
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const guest = JSON.parse(localStorage.getItem('guest'));
+            if(!guest) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            const params = new URLSearchParams(window.location.search);
+            const type = params.get('type');
+            const arrival = params.get('arrival');
+            const departure = params.get('departure');
+            const qty = parseInt(params.get('qty') || '1');
+            
+            if(!type || !arrival || !departure) {
+                window.location.href = '/';
+                return;
+            }
+
+            // Pre-fill user data
+            document.getElementById('guest-name').value = guest.FirstName + ' ' + guest.LastName;
+            document.getElementById('guest-email').value = guest.Email;
+            
+            // Format Summary visually
+            document.getElementById('room-info').innerHTML = `
+                <div style="margin-bottom: 1rem;">
+                    <span style="color:#888; font-size: 0.85rem;">Phòng yêu cầu</span><br>
+                    <strong style="color:white; font-size: 1.2rem;">${qty} x ${type}</strong>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <span style="color:#888; font-size: 0.85rem;">Nhận phòng (Từ 14:00)</span><br>
+                    <strong style="color:white;">${arrival}</strong>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <span style="color:#888; font-size: 0.85rem;">Trả phòng (Trước 12:00)</span><br>
+                    <strong style="color:white;">${departure}</strong>
+                </div>
+                <hr style="border-color: #444; margin: 1rem 0;">
+                <p style="color:var(--primary); font-size: 0.8rem;">* Miễn phí hủy trước 24h nhận phòng.</p>
+            `;
+
+            document.getElementById('booking-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const msg = document.getElementById('msg');
+                const btn = document.getElementById('confirm-btn');
+
+                btn.disabled = true;
+                btn.textContent = 'Hệ thống đang lên Đơn...';
+
+                try {
+                    let successIds = [];
+                    for(let i=0; i<qty; i++) {
+                        const response = await fetch('/api/bookings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                guestId: guest.GuestID, 
+                                roomType: type, 
+                                arrivalDate: arrival, 
+                                departureDate: departure 
+                            })
+                        });
+                        const data = await response.json();
+                        if(!response.ok) throw new Error(data.message);
+                        successIds.push(data.bookingId);
+                    }
+
+                    msg.style.color = '#4CAF50';
+                    msg.innerHTML = `Thành công! Các mã đơn: <b>${successIds.join(', ')}</b>. Bạn sẽ được điều hướng về Trang chủ.`;
+                    setTimeout(() => window.location.href = '/index.html', 4000);
+                } catch(e) {
+                    msg.style.color = '#ff4d4d';
+                    msg.textContent = 'Lỗi xử lý: ' + e.message;
+                    btn.disabled = false;
+                    btn.textContent = 'Thử Lại';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

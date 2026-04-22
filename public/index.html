@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Palace Hotel | Luxury & Comfort</title>
+    <meta name="description" content="Experience the ultimate luxury stay at the Grand Palace Hotel.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="glass-header">
+        <div class="logo">Grand Palace</div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#rooms">Rooms</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="/login.html" class="btn btn-outline">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="home" class="hero-section">
+        <div class="hero-content">
+            <h1>Experience Unmatched Elegance</h1>
+            <p>Your perfect escape awaits in the heart of the city.</p>
+        </div>
+        
+        <!-- JW Marriott style Booking Bar -->
+        <div class="booking-bar">
+            <form id="search-form" class="booking-form">
+                <div class="form-group">
+                    <label>NGÀY (1 ĐÊM)</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="date" id="search-arrival" required>
+                        <span style="color:#aaa;">→</span>
+                        <input type="date" id="search-departure" required>
+                    </div>
+                </div>
+                <div class="form-divider"></div>
+                <div class="form-group" style="position: relative;" id="guest-group">
+                    <label>PHÒNG & KHÁCH</label>
+                    <div id="guests-display" style="color:#fff; font-size:1rem; cursor:pointer;" onclick="toggleGuestPopover()">
+                        1 Phòng, 2 Khách
+                    </div>
+                    <div id="guests-popover" class="guests-popover" style="display:none;">
+                        <span class="close-popover" onclick="toggleGuestPopover()">×</span>
+                        <h4 style="margin-bottom: 1rem; color: #555; font-size: 0.8rem; text-transform: uppercase;">Giới hạn Đặt phòng</h4>
+                        <div class="counter-row">
+                            <div><strong>Số phòng</strong><br><small style="color:#888; font-size: 0.75rem;">(Tối đa: 5 phòng)</small></div>
+                            <div class="counter">
+                                <button type="button" onclick="updateCount('rooms', -1)">-</button>
+                                <span id="count-rooms" style="color: black;">1</span>
+                                <button type="button" onclick="updateCount('rooms', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="counter-row">
+                            <div><strong>Người lớn</strong><br><small style="color:#888; font-size: 0.75rem;">(Tối đa: 16 người lớn)</small></div>
+                            <div class="counter">
+                                <button type="button" onclick="updateCount('adults', -1)">-</button>
+                                <span id="count-adults" style="color: black;">2</span>
+                                <button type="button" onclick="updateCount('adults', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="counter-row">
+                            <div><strong>Trẻ em</strong><br><small style="color:#888; font-size: 0.75rem;">(Dưới 12 tuổi)</small></div>
+                            <div class="counter">
+                                <button type="button" onclick="updateCount('children', -1)">-</button>
+                                <span id="count-children" style="color: black;">0</span>
+                                <button type="button" onclick="updateCount('children', 1)">+</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline" style="width: 100%; margin-top: 1rem; padding: 0.5rem;" onclick="toggleGuestPopover()">OK</button>
+                    </div>
+                </div>
+                <div class="form-divider"></div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-search">Xem Mức Giá</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section id="rooms" class="rooms-section">
+        <div class="section-title">
+            <h2 id="room-section-title">Phòng Đề Cử</h2>
+            <p id="room-section-desc">Vui lòng chọn ngày và số lượng khách để xem các gợi ý phòng tốt nhất.</p>
+        </div>
+        <div class="rooms-grid" id="rooms-container">
+            <!-- Dynamically injected -->
+        </div>
+    </section>
+
+    <!-- Room Detail Modal -->
+    <div id="room-detail-modal" class="modal-backdrop" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto;">
+        <div class="modal-content-large">
+            <span class="close-modal-btn" onclick="closeRoomModal()">&times;</span>
+            <div class="modal-grid">
+                <!-- Left: Gallery -->
+                <div class="modal-gallery">
+                    <img id="modal-main-img" class="main-img" src="" alt="Main Room Image">
+                    <div class="thumbnail-row">
+                        <div class="thumb active" onclick="changeImage(this, 'main')">Ảnh 1</div>
+                        <div class="thumb" onclick="changeImage(this, 'thumb')">Ảnh 2</div>
+                        <div class="thumb" onclick="changeImage(this, 'thumb')">Ảnh 3</div>
+                        <div class="thumb" onclick="changeImage(this, 'thumb')">Ảnh 4</div>
+                        <div class="thumb" onclick="changeImage(this, 'thumb')">Ảnh 5</div>
+                        <div class="thumb" onclick="changeImage(this, 'thumb')">Ảnh 6</div>
+                        <div class="thumb" onclick="changeImage(this, 'thumb')">Ảnh 7</div>
+                        <div class="thumb" onclick="changeImage(this, 'thumb')">Ảnh 8</div>
+                        <div class="thumb" onclick="changeImage(this, 'thumb')">Ảnh 9</div>
+                        <div class="thumb" onclick="changeImage(this, 'thumb')">Ảnh 10</div>
+                    </div>
+                </div>
+                <!-- Right: Details -->
+                <div class="modal-details">
+                    <h2 id="modal-room-title">Phòng...</h2>
+                    
+                    <div class="tags-row">
+                        <span class="detail-tag">🛏️ Phòng</span>
+                        <span class="detail-tag" id="modal-room-area">📐 27 m²</span>
+                        <span class="detail-tag">⛰️ Khung cảnh đẹp</span>
+                        <span class="detail-tag">❄️ Điều hòa không khí</span>
+                        <span class="detail-tag">🚿 Phòng tắm riêng</span>
+                        <span class="detail-tag">📺 TV màn hình phẳng</span>
+                        <span class="detail-tag">🍷 Minibar</span>
+                        <span class="detail-tag">📶 WiFi miễn phí</span>
+                    </div>
+
+                    <p style="margin: 0.5rem 0; font-size: 0.85rem;" id="modal-room-desc">Mô tả phòng...</p>
+
+                    <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">Trong phòng tắm riêng của bạn:</h4>
+                    <div class="amenities-grid">
+                        <span>✓ Đồ vệ sinh cá nhân miễn phí</span>
+                        <span>✓ Bồn tắm hoặc Vòi sen</span>
+                        <span>✓ Chậu rửa vệ sinh</span>
+                        <span>✓ Dép</span>
+                        <span>✓ Máy sấy tóc</span>
+                        <span>✓ Giấy vệ sinh</span>
+                    </div>
+
+                    <h4 style="margin-top: 0.8rem; font-size: 0.95rem; margin-bottom: 0.2rem;">Tiện nghi phòng:</h4>
+                    <div class="amenities-grid cols-2">
+                        <span>✓ Bàn làm việc</span>
+                        <span>✓ TV</span>
+                        <span>✓ Thiết báo carbon</span>
+                        <span>✓ Tủ lạnh</span>
+                        <span>✓ TV màn hình phẳng</span>
+                        <span>✓ Minibar</span>
+                        <span>✓ Dịch vụ báo thức</span>
+                        <span>✓ Ấm đun nước điện</span>
+                        <span>✓ Đồng hồ báo thức</span>
+                        <span>✓ Điện thoại</span>
+                        <span>✓ Khăn tắm</span>
+                        <span>✓ Khu vực ăn uống</span>
+                    </div>
+                    
+                    <p style="margin-top: 1.5rem;"><strong>Hút thuốc:</strong> Không hút thuốc</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Grand Palace. All rights reserved.</p>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>

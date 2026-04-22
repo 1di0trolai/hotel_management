@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Portal - Grand Palace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom, rgba(15, 17, 21, 0.8), var(--bg-dark)); /* darker for admin */
+            padding: 2rem;
+        }
+        .auth-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid var(--primary); /* highlight border for admin */
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(203, 160, 82, 0.2);
+            text-align: center;
+        }
+        .auth-box h2 {
+            margin-bottom: 2rem;
+            color: #fff;
+            font-size: 1.8rem;
+        }
+        .auth-box h2 span {
+            color: var(--primary);
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+        }
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+        .auth-box .btn {
+            width: 100%;
+            margin-top: 1rem;
+        }
+        #error-msg {
+            color: #ff4d4d;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <h2><span>Staff</span> Portal</h2>
+            <div id="error-msg"></div>
+            <form id="emp-login-form">
+                <div class="input-group">
+                    <label>Employee Email</label>
+                    <input type="email" id="email" required placeholder="admin@grandpalace.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn btn-primary" id="login-btn">Secure Login</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('emp-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('login-btn');
+            const errorMsg = document.getElementById('error-msg');
+
+            btn.textContent = 'Authenticating...';
+            btn.disabled = true;
+            errorMsg.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/auth/employee-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('employee', JSON.stringify(data.employee));
+                    window.location.href = '/dashboard.html';
+                } else {
+                    errorMsg.textContent = data.message || 'Login failed';
+                    errorMsg.style.display = 'block';
+                    btn.textContent = 'Secure Login';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Network error.';
+                errorMsg.style.display = 'block';
+                btn.textContent = 'Secure Login';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

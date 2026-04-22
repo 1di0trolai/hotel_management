@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Grand Palace Hotel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body { background-color: var(--bg-dark); }
+        .dashboard { display: flex; min-height: 100vh; }
+        .sidebar {
+            width: 250px;
+            background: var(--bg-light);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-brand { font-size: 1.5rem; font-weight: 700; color: var(--primary); margin-bottom: 3rem; }
+        .nav-item { padding: 1rem; color: #ccc; cursor: pointer; border-radius: 8px; transition: var(--transition); margin-bottom: 0.5rem; }
+        .nav-item:hover, .nav-item.active { background: rgba(203, 160, 82, 0.1); color: var(--primary); }
+        .main-content { flex: 1; padding: 2rem 3rem; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 2rem; align-items: center; }
+        .header h2 { font-size: 2rem; color: #fff; }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+        .data-table th, .data-table td {
+            padding: 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .data-table th { background: rgba(0,0,0,0.2); color: var(--primary); font-weight: 600; }
+        .data-table tr:hover { background: rgba(255,255,255,0.02); }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-brand">Grand Palace</div>
+            <div class="nav-item active">Reservations</div>
+            <div class="nav-item" onclick="logout()">Logout</div>
+        </aside>
+        <main class="main-content">
+            <div class="header">
+                <h2>All Bookings</h2>
+                <div id="staff-name" style="color:var(--primary)"></div>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Guest Name</th>
+                        <th>Room Type (No)</th>
+                        <th>Arrival Date</th>
+                        <th>Departure Date</th>
+                    </tr>
+                </thead>
+                <tbody id="bookings-tbody">
+                    <tr><td colspan="5" style="text-align:center">Loading...</td></tr>
+                </tbody>
+            </table>
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const emp = JSON.parse(localStorage.getItem('employee'));
+            if (!emp) {
+                window.location.href = '/employee-login.html';
+                return;
+            }
+            document.getElementById('staff-name').textContent = `Role: ${emp.RoleTitle} | ${emp.FirstName}`;
+            fetchBookings();
+        });
+
+        async function fetchBookings() {
+            try {
+                const response = await fetch('/api/bookings');
+                const bookings = await response.json();
+                const tbody = document.getElementById('bookings-tbody');
+                tbody.innerHTML = '';
+                
+                if (bookings.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">No bookings found.</td></tr>';
+                    return;
+                }
+
+                bookings.forEach(b => {
+                    const dr = new Date(b.ArrivalDate).toLocaleDateString();
+                    const dp = new Date(b.DepartureDate).toLocaleDateString();
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>#${b.BookingID}</td>
+                            <td>${b.GuestName}</td>
+                            <td>${b.RoomType} (${b.RoomNo})</td>
+                            <td>${dr}</td>
+                            <td>${dp}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('employee');
+            window.location.href = '/employee-login.html';
+        }
+    </script>
+</body>
+</html>
