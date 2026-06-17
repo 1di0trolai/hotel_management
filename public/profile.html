@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | Grand Palace Hotel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .profile-container {
+            display: flex;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .sidebar {
+            width: 250px;
+            background: rgba(255,255,255,0.05);
+            padding: 2rem 1rem;
+            border-radius: 10px;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar li {
+            padding: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+            transition: 0.3s;
+        }
+        .sidebar li:hover, .sidebar li.active {
+            background: var(--primary);
+            color: #fff;
+        }
+        .content-area {
+            flex: 1;
+            background: rgba(255,255,255,0.02);
+            padding: 2rem;
+            border-radius: 10px;
+            min-height: 500px;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .data-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .data-card h4 { margin: 0 0 0.5rem 0; color: #fff; }
+        .data-card p { margin: 0 0 0.2rem 0; color: #aaa; font-size: 0.9rem; }
+        .status-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-Confirmed { background: #2196F3; color: white; }
+        .status-CheckedIn { background: #4CAF50; color: white; }
+        .status-CheckedOut { background: #9E9E9E; color: white; }
+        .status-Cancelled { background: #f44336; color: white; }
+        
+        .modal-body input, .modal-body textarea, .modal-body select {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #2a2c33;
+            color: white;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body style="background: #1a1c23; color: #fff;">
+    <header class="glass-header" style="background: rgba(15, 17, 21, 0.95);">
+        <div class="logo">Grand Palace</div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="/index.html">Home</a></li>
+                <li><a href="/index.html#rooms">Rooms</a></li>
+                <li><a href="/index.html#about">About</a></li>
+                <li><a href="/index.html#contact">Contact</a></li>
+                <li><a href="/login.html" class="btn btn-outline" id="nav-login-btn">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section style="padding: 120px 5% 50px; min-height: 80vh;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 2rem; color: var(--primary); text-align: center;">Your Profile</h1>
+        
+        <div class="profile-container">
+            <div class="sidebar">
+                <ul>
+                    <li class="active" onclick="switchTab('profile')">👤 Personal Info</li>
+                    <li onclick="switchTab('bookings')">🛏️ My Bookings</li>
+                    <li onclick="switchTab('invoices')">🧾 Invoices</li>
+                </ul>
+            </div>
+            
+            <div class="content-area">
+                <!-- Profile Tab -->
+                <div id="tab-profile" class="tab-content active">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; margin-bottom: 1.5rem; padding-bottom: 0.5rem;">
+                        <h2 style="color: #fff; margin: 0;">Account Information</h2>
+                        <button class="btn btn-outline" style="padding: 0.4rem 1rem;" onclick="openEditProfileModal()">Edit Profile</button>
+                    </div>
+                    <div id="profile-info-container">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Bookings Tab -->
+                <div id="tab-bookings" class="tab-content">
+                    <h2 style="color: #fff; border-bottom: 1px solid #444; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">Booking History</h2>
+                    <div id="bookings-container">
+                        Loading...
+                    </div>
+                </div>
+
+                <!-- Invoices Tab -->
+                <div id="tab-invoices" class="tab-content">
+                    <h2 style="color: #fff; border-bottom: 1px solid #444; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">Payment Invoices</h2>
+                    <div id="invoices-container">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Review Modal -->
+    <div id="review-modal" class="modal-backdrop" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: #1a1c23; padding: 2rem; border-radius: 10px; width: 400px; max-width: 90%; border: 1px solid #444; position: relative;">
+            <span class="close-modal-btn" onclick="closeReviewModal()" style="position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #fff;">&times;</span>
+            <h3 style="color: #fff; margin-bottom: 1.5rem;">Write a Review</h3>
+            <div class="modal-body">
+                <input type="hidden" id="review-invoice-id">
+                <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Satisfaction Level (Stars):</label>
+                <select id="review-rating" required>
+                    <option value="5">5 Stars - Excellent</option>
+                    <option value="4">4 Stars - Very Good</option>
+                    <option value="3">3 Stars - Acceptable</option>
+                    <option value="2">2 Stars - Poor</option>
+                    <option value="1">1 Star - Terrible</option>
+                </select>
+                <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Your Comment:</label>
+                <textarea id="review-comment" placeholder="Share your experience..." rows="4" required></textarea>
+                <button class="btn btn-primary" style="width: 100%" onclick="submitReview()">Submit Review</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal-backdrop" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: #1a1c23; padding: 2rem; border-radius: 10px; width: 500px; max-width: 90%; border: 1px solid #444; position: relative;">
+            <span class="close-modal-btn" onclick="closeEditProfileModal()" style="position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #fff;">&times;</span>
+            <h3 style="color: #fff; margin-bottom: 1.5rem;">Edit Profile</h3>
+            <form id="edit-profile-form" class="modal-body">
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">First Name:</label>
+                        <input type="text" id="edit-firstname" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Last Name:</label>
+                        <input type="text" id="edit-lastname" required>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Phone Number:</label>
+                        <input type="tel" id="edit-phone">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Date of Birth:</label>
+                        <input type="date" id="edit-dob">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Gender:</label>
+                        <select id="edit-gender">
+                            <option value="">Select...</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Passport / ID:</label>
+                        <input type="text" id="edit-passport">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" id="edit-profile-btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Grand Palace. All rights reserved.</p>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/profile.js"></script>
+</body>
+</html>
