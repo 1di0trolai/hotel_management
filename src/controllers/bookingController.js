@@ -38,7 +38,7 @@ exports.createBooking = async (req, res) => {
         res.status(201).json({ message: 'Booking created successfully', bookingId: newBooking.BookingID });
     } catch (error) {
         console.error("Error creating booking:", error);
-        if (error.message === 'No rooms available for this type during the selected dates.') {
+        if (error.message === 'No rooms available for this type.') {
             return res.status(404).json({ message: error.message });
         }
         res.status(500).json({ message: 'Internal Server Error' });
