@@ -77,16 +77,16 @@ npm install
 
 **Bước 2: Cấu hình cơ sở dữ liệu**
 1. Mở Microsoft SQL Server Management Studio (SSMS).
-2. Chạy các script trong thư mục `sql/mysql/` theo thứ tự ưu tiên (Tạo bảng Role, Hotel, RoomType, sau đó là Room, Employee, Guest, Booking, Bill) hoặc chạy script tổng `hotel_management.sql`.
+2. Chạy các script trong thư mục `sql/mysql/` theo thứ tự `schema.sql`, `seed-hotel.sql`, `seed-room.sql`, `seed-guest.sql`, `seed-staff.sql`.
 3. Tạo/Chỉnh sửa file `.envexe` ở thư mục gốc của dự án và điền thông tin:
 
 **Bước 3: Khởi chạy Server**
 ```bash
-node src/server.js
-# Hoặc npm start (nếu đã cấu hình trong package.json)
+npm start 
+# Hoặc node src/server.js
 ```
 
-**Bước 4: Trải nghiệm hệ thống**
+**Bước 5: Trải nghiệm hệ thống**
 Mở trình duyệt và truy cập: `http://localhost:3000`
 TK Admin: admin@hotel.com, mk:123456
 
