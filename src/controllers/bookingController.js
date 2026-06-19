@@ -1,4 +1,5 @@
 const BookingModel = require('../models/bookingModel');
+const GuestModel = require('../models/guestModel');
 
 exports.getAllBookings = async (req, res) => {
     try {
@@ -42,6 +43,47 @@ exports.createBooking = async (req, res) => {
             return res.status(404).json({ message: error.message });
         }
         res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.createWalkInBooking = async (req,res)=>{
+    try{
+
+        const guestInfo = await GuestModel.createWalkInGuest({
+            firstName:req.body.firstName,
+            lastName:req.body.lastName,
+            phoneNo:req.body.phoneNo,
+            email:req.body.email,
+            passportNo:req.body.passportNo
+        });
+
+        const booking =
+            await BookingModel.createWalkInBooking({
+                guestId: guestInfo.guest.GuestID,
+                hotelCode:req.body.hotelCode,
+                roomNo:req.body.roomNo,
+                arrivalDate:req.body.arrivalDate,
+                departureDate:req.body.departureDate,
+                adults:req.body.adults,
+                children:req.body.children,
+                checkInNow:req.body.checkInNow
+            });
+
+        res.status(201).json({
+            success:true,
+            guestId:guestInfo.guest.GuestID,
+            invoiceNo:booking.invoiceNo,
+            generatedPassword:
+                guestInfo.existing
+                    ? null
+                    : guestInfo.tempPassword
+        });
+
+    } catch(error){
+        console.error(error);
+        res.status(500).json({
+            message:error.message
+        });
     }
 };
 

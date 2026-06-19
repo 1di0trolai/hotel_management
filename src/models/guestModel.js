@@ -89,6 +89,69 @@ class GuestModel {
             throw error;
         }
     }
+    static async createWalkInGuest(data) {
+        const pool = await poolPromise;
+
+        const existing = await pool.request()
+            .input('PhoneNo', data.phoneNo)
+            .input('Email', data.email || null)
+            .query(`
+                SELECT TOP 1 *
+                FROM Guest
+                WHERE PhoneNo = @PhoneNo
+                OR (@Email IS NOT NULL AND Email = @Email)
+            `);
+
+        if (existing.recordset.length > 0) {
+            return {
+                existing: true,
+                guest: existing.recordset[0]
+            };
+        }
+
+        const bcrypt = require('bcryptjs');
+
+        const tempPassword =
+            Math.random().toString(36).slice(-8) + 'A1!';
+
+        const hashedPassword =
+            await bcrypt.hash(tempPassword, 10);
+
+        const result = await pool.request()
+            .input('FirstName', data.firstName)
+            .input('LastName', data.lastName)
+            .input('PhoneNo', data.phoneNo)
+            .input('Email', data.email || null)
+            .input('PassportNo', data.passportNo || null)
+            .input('Password', hashedPassword)
+            .query(`
+                INSERT INTO Guest
+                (
+                    FirstName,
+                    LastName,
+                    PhoneNo,
+                    Email,
+                    PassportNo,
+                    Password
+                )
+                OUTPUT INSERTED.*
+                VALUES
+                (
+                    @FirstName,
+                    @LastName,
+                    @PhoneNo,
+                    @Email,
+                    @PassportNo,
+                    @Password
+                )
+            `);
+
+        return {
+            existing: false,
+            guest: result.recordset[0],
+            tempPassword
+        };
+    }
 }
 
 module.exports = GuestModel;

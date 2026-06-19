@@ -92,6 +92,75 @@
 
         .tab-section { display: none; }
         .tab-section.active { display: block; }
+
+        .walkin-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .walkin-modal {
+            width: 100%;
+            max-width: 700px;
+             background: var(--bg-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .walkin-modal h3 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .walkin-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .walkin-modal input,
+        .walkin-modal select {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--bg-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .walkin-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-primary {
+            background: rgba(203,160,82,0.15);
+            color: var(--primary);
+            border: 1px solid rgba(203,160,82,0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            color: #ccc;
+            border: 1px solid var(--glass-border);
+        }
     </style>
 </head>
 <body>
@@ -166,10 +235,15 @@
                             <th>Occupancy</th>
                             <th>Price</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="rooms-tbody">
-                        <tr><td colspan="6" style="text-align:center">Loading...</td></tr>
+                        <tr>
+                            <td colspan="7" style="text-align:center">
+                                Loading...
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </section>
@@ -194,6 +268,63 @@
                 </table>
             </section>
         </main>
+    </div>
+
+    <div id="walkin-modal" class="walkin-overlay">
+        <div class="walkin-modal">
+            <h3>Create Booking</h3>
+
+            <div class="walkin-grid">
+                <input id="wi-firstName" placeholder="First Name">
+                <input id="wi-lastName" placeholder="Last Name">
+
+                <input id="wi-phone" placeholder="Phone">
+                <input id="wi-email" placeholder="Email">
+
+                <input id="wi-passport" placeholder="Passport">
+                <input id="wi-roomNo" readonly>
+
+                <div>
+                    <label>Adults</label>
+                    <input
+                        id="wi-adults"
+                        type="number"
+                        min="1"
+                        value="1">
+                </div>
+
+                <div>
+                    <label>Children</label>
+                    <input
+                        id="wi-children"
+                        type="number"
+                        min="0"
+                        value="0">
+                </div>
+
+                <div>
+                    <label for="wi-arrival">Check-in Date</label>
+                    <input id="wi-arrival" type="date">
+                </div>
+
+                <div>
+                    <label for="wi-departure">Check-out Date</label>
+                    <input id="wi-departure" type="date">
+                </div>
+            </div>
+
+            <div class="walkin-actions">
+                <button class="btn-action btn-primary"
+                        onclick="createWalkInBooking()">
+                    Create Booking
+                </button>
+
+                <button class="btn-action btn-secondary"
+                        onclick="closeWalkInModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -278,6 +409,104 @@
             } catch (error) { console.error(error); alert('Network error'); }
         }
 
+        function openWalkInModal(roomNo) {
+            document.getElementById('wi-roomNo').value = roomNo;
+
+            const today = new Date();
+
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+
+            document.getElementById('wi-arrival').value =
+                today.toISOString().split('T')[0];
+
+            document.getElementById('wi-departure').value =
+                tomorrow.toISOString().split('T')[0];
+
+            document.getElementById('walkin-modal').style.display = 'flex';
+        }
+
+        function closeWalkInModal() {
+            document.getElementById('walkin-modal').style.display = 'none';
+        }
+
+        document.getElementById('wi-arrival')
+            .addEventListener('change', e => {
+
+                const arrival = new Date(e.target.value);
+                arrival.setDate(arrival.getDate() + 1);
+
+                document.getElementById('wi-departure').value =
+                    arrival.toISOString().split('T')[0];
+            });
+                
+        async function createWalkInBooking() {
+            try {
+
+                const payload = {
+                    firstName: document.getElementById('wi-firstName').value,
+                    lastName: document.getElementById('wi-lastName').value,
+                    phoneNo: document.getElementById('wi-phone').value,
+                    email: document.getElementById('wi-email').value,
+                    passportNo: document.getElementById('wi-passport').value,
+
+                    roomNo: document.getElementById('wi-roomNo').value,
+
+                    arrivalDate: document.getElementById('wi-arrival').value,
+                    departureDate: document.getElementById('wi-departure').value,
+
+                    adults: parseInt(document.getElementById('wi-adults').value, 10),
+                    children: parseInt(document.getElementById('wi-children').value, 10),
+
+                    employeeId: emp.EmployeeID,
+                    hotelCode: emp.HotelCode,
+                    checkInNow: true
+                };
+
+                console.log('Walk-in payload:', payload);
+
+                const res = await fetch('/api/bookings/walkin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+
+                console.log('Walk-in response:', result);
+
+                if (!res.ok) {
+                    throw new Error(result.message || 'Request failed');
+                }
+
+                alert('Booking created');
+
+                resetWalkInForm();
+                closeWalkInModal();
+                fetchRooms();
+                fetchBookings();
+
+            } catch (err) {
+                console.error(err);
+                alert(err.message);
+            }
+        }
+
+        function resetWalkInForm() {
+            document.getElementById('wi-firstName').value = '';
+            document.getElementById('wi-lastName').value = '';
+            document.getElementById('wi-phone').value = '';
+            document.getElementById('wi-email').value = '';
+            document.getElementById('wi-passport').value = '';
+
+            document.getElementById('wi-adults').value = 1;
+            document.getElementById('wi-children').value = 0;
+
+            document.getElementById('wi-roomNo').value = '';
+        }
+
         async function fetchBookings() {
             try {
                 const response = await fetch(`/api/bookings?employeeId=${emp.EmployeeID}`);
@@ -357,6 +586,18 @@
                            </select>`
                         : `<span class="room-status-badge ${statusClass}">${status}</span>`;
 
+                    const canCreateBooking =
+                        emp?.Permissions?.includes('manage_bookings');
+
+                    const walkInBtn =
+                        status === 'Available' && canCreateBooking
+                        ? `<button
+                                class="btn-action btn-checkin"
+                                onclick="openWalkInModal('${r.RoomNo}')">
+                                Walk-in
+                        </button>`
+                        : '-';
+
                     tbody.innerHTML += `
                         <tr>
                             <td>${r.RoomNo}</td>
@@ -365,6 +606,7 @@
                             <td>${r.Occupancy}</td>
                             <td>$${r.RoomPrice}</td>
                             <td>${statusCell}</td>
+                            <td>${walkInBtn}</td>
                         </tr>
                     `;
                 });
