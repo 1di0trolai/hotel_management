@@ -12,13 +12,13 @@ exports.getAllBookings = async (req, res) => {
 
 exports.createBookingOrder = async (req, res) => {
     try {
-        const { guestId, comboParts, arrivalDate, departureDate } = req.body;
+        const { guestId, comboParts, arrivalDate, departureDate, numAdults, numChildren, specialReq } = req.body;
         
         if (!guestId || !comboParts || !arrivalDate || !departureDate) {
             return res.status(400).json({ message: 'All fields are required' });
         }
 
-        const invoiceNo = await BookingModel.createBookingOrder(guestId, comboParts, arrivalDate, departureDate);
+        const invoiceNo = await BookingModel.createBookingOrder(guestId, comboParts, arrivalDate, departureDate, numAdults, numChildren, specialReq);
         res.status(201).json({ message: 'Booking order created successfully', invoiceNo: invoiceNo });
     } catch (error) {
         console.error("Error creating booking order:", error);
@@ -101,5 +101,32 @@ exports.cancelBooking = async (req, res) => {
     } catch (error) {
         console.error("Error cancelling booking:", error);
         res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getBookingDetailsByInvoice = async (req, res) => {
+    try {
+        const invoiceNo = req.params.invoiceNo;
+        // Import BookingModel dynamically if not at top, but it should be at top
+        const BookingModel = require('../models/bookingModel');
+        const details = await BookingModel.getBookingDetailsByInvoice(invoiceNo);
+        res.json(details);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.checkInBooking = async (req, res) => {
+    try {
+        const invoiceNo = req.params.invoiceNo;
+        const assignments = req.body.assignments; // Array of { bookingId, roomNo }
+        const BookingModel = require('../models/bookingModel');
+        const success = await BookingModel.checkInBooking(invoiceNo, assignments);
+        if (success) res.json({ message: 'Checked in successfully' });
+        else res.status(400).json({ message: 'Failed to check in' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: error.message || 'Server error' });
     }
 };

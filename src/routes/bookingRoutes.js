@@ -23,4 +23,10 @@ router.get('/guest/:guestId', bookingController.getBookingsByGuest);
 // PUT /api/bookings/:id/cancel
 router.put('/:id/cancel', bookingController.cancelBooking);
 
+// GET /api/bookings/:invoiceNo/details
+router.get('/:invoiceNo/details', bookingController.getBookingDetailsByInvoice);
+
+// PUT /api/bookings/:invoiceNo/checkin
+router.put('/:invoiceNo/checkin', bookingController.checkInBooking);
+
 module.exports = router;

@@ -212,7 +212,9 @@ function bookRoom(comboString, arrival, departure) {
         alert('Please login to proceed with booking!');
         window.location.href = '/login.html';
     } else {
-        window.location.href = `/book.html?combo=${encodeURIComponent(comboString)}&arrival=${arrival}&departure=${departure}`;
+        const adults = window.guestCounts?.adults || 1;
+        const children = window.guestCounts?.children || 0;
+        window.location.href = `/book.html?combo=${encodeURIComponent(comboString)}&arrival=${arrival}&departure=${departure}&adults=${adults}&children=${children}`;
     }
 }
 
