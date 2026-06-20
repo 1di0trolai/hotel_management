@@ -46,44 +46,92 @@ exports.createBooking = async (req, res) => {
     }
 };
 
-exports.createWalkInBooking = async (req,res)=>{
-    try{
+exports.createWalkInBooking = async (req, res) => {
+    try {
+        const {
+            firstName, lastName, phoneNo, email, passportNo,
+            roomNo, hotelCode, arrivalDate, departureDate,
+            adults, children
+        } = req.body;
+
+        const missing = [];
+
+        if (!firstName?.trim()) missing.push('First Name');
+        if (!lastName?.trim()) missing.push('Last Name');
+        if (!phoneNo?.trim()) missing.push('Phone Number');
+        if (!roomNo) missing.push('Room Number');
+        if (hotelCode === undefined || hotelCode === null || hotelCode === '') missing.push('Hotel');
+        if (!arrivalDate) missing.push('Check-in Date');
+        if (!departureDate) missing.push('Check-out Date');
+
+        if (missing.length > 0) {
+            return res.status(400).json({
+                message: `Missing required field(s): ${missing.join(', ')}`,
+                missingFields: missing
+            });
+        }
+
+        const arrival = new Date(arrivalDate);
+        const departure = new Date(departureDate);
+        if (isNaN(arrival.getTime()) || isNaN(departure.getTime())) {
+            return res.status(400).json({ message: 'Check-in/Check-out date is invalid.' });
+        }
+        if (departure <= arrival) {
+            return res.status(400).json({ message: 'Check-out date must be after check-in date.' });
+        }
+
+        const numAdults = adults === undefined || adults === '' ? 1 : parseInt(adults, 10);
+        const numChildren = children === undefined || children === '' ? 0 : parseInt(children, 10);
+
+        if (!Number.isInteger(numAdults) || numAdults < 1) {
+            return res.status(400).json({ message: 'Adults must be at least 1.' });
+        }
+        if (!Number.isInteger(numChildren) || numChildren < 0) {
+            return res.status(400).json({ message: 'Children cannot be negative.' });
+        }
 
         const guestInfo = await GuestModel.createWalkInGuest({
-            firstName:req.body.firstName,
-            lastName:req.body.lastName,
-            phoneNo:req.body.phoneNo,
-            email:req.body.email,
-            passportNo:req.body.passportNo
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            phoneNo: phoneNo.trim(),
+            email: email?.trim() || null,
+            passportNo: passportNo?.trim() || null
         });
 
         const booking =
             await BookingModel.createWalkInBooking({
                 guestId: guestInfo.guest.GuestID,
-                hotelCode:req.body.hotelCode,
-                roomNo:req.body.roomNo,
-                arrivalDate:req.body.arrivalDate,
-                departureDate:req.body.departureDate,
-                adults:req.body.adults,
-                children:req.body.children,
-                checkInNow:req.body.checkInNow
+                hotelCode,
+                roomNo,
+                arrivalDate,
+                departureDate,
+                adults: numAdults,
+                children: numChildren,
+                checkInNow: req.body.checkInNow
             });
 
         res.status(201).json({
-            success:true,
-            guestId:guestInfo.guest.GuestID,
-            invoiceNo:booking.invoiceNo,
+            success: true,
+            guestId: guestInfo.guest.GuestID,
+            invoiceNo: booking.invoiceNo,
+            totalAmount: booking.totalAmount,
             generatedPassword:
                 guestInfo.existing
                     ? null
                     : guestInfo.tempPassword
         });
 
-    } catch(error){
+    } catch (error) {
         console.error(error);
-        res.status(500).json({
-            message:error.message
-        });
+
+        if (error.message === 'Room is no longer available.' || error.message === 'Room not found.') {
+            return res.status(409).json({ message: error.message });
+        }
+        if (error.message === 'Departure date must be after arrival date.') {
+            return res.status(400).json({ message: error.message });
+        }
+
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 };
 

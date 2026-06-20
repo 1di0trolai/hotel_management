@@ -9,7 +9,7 @@ class EmployeeModel {
             const result = await pool.request()
                 .input('Email', email)
                 .query(`
-                    SELECT e.EmployeeID, e.FirstName, e.LastName, e.Email, e.Password, e.RoleID, r.RoleTitle 
+                    SELECT e.EmployeeID, e.FirstName, e.LastName, e.Email, e.Password, e.RoleID, e.HotelCode, r.RoleTitle 
                     FROM Employee e
                     INNER JOIN Role r ON e.RoleID = r.RoleID
                     WHERE e.Email = @Email

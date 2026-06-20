@@ -92,15 +92,23 @@ class GuestModel {
     static async createWalkInGuest(data) {
         const pool = await poolPromise;
 
-        const existing = await pool.request()
+        let existing = await pool.request()
             .input('PhoneNo', data.phoneNo)
-            .input('Email', data.email || null)
             .query(`
                 SELECT TOP 1 *
                 FROM Guest
                 WHERE PhoneNo = @PhoneNo
-                OR (@Email IS NOT NULL AND Email = @Email)
             `);
+
+        if (existing.recordset.length === 0 && data.email) {
+            existing = await pool.request()
+                .input('Email', data.email)
+                .query(`
+                    SELECT TOP 1 *
+                    FROM Guest
+                    WHERE Email = @Email
+                `);
+        }
 
         if (existing.recordset.length > 0) {
             return {

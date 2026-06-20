@@ -388,6 +388,15 @@
         async function fetchStatistics() {
             try {
                 const res = await fetch(`/api/bookings/statistics?employeeId=${emp.EmployeeID}`);
+
+                if (res.status === 403) {
+                    document.getElementById('stat-total').textContent = '—';
+                    document.getElementById('stat-checkin').textContent = '—';
+                    document.getElementById('stat-checkout').textContent = '—';
+                    document.getElementById('stat-rate').textContent = '—';
+                    return;
+                }
+
                 const stats = await res.json();
                 document.getElementById('stat-total').textContent = stats.TotalBookings;
                 document.getElementById('stat-checkin').textContent = stats.CheckedIn;
@@ -441,14 +450,16 @@
             });
                 
         async function createWalkInBooking() {
+            const submitBtn = document.querySelector('.walkin-actions .btn-primary');
+
             try {
 
                 const payload = {
-                    firstName: document.getElementById('wi-firstName').value,
-                    lastName: document.getElementById('wi-lastName').value,
-                    phoneNo: document.getElementById('wi-phone').value,
-                    email: document.getElementById('wi-email').value,
-                    passportNo: document.getElementById('wi-passport').value,
+                    firstName: document.getElementById('wi-firstName').value.trim(),
+                    lastName: document.getElementById('wi-lastName').value.trim(),
+                    phoneNo: document.getElementById('wi-phone').value.trim(),
+                    email: document.getElementById('wi-email').value.trim(),
+                    passportNo: document.getElementById('wi-passport').value.trim(),
 
                     roomNo: document.getElementById('wi-roomNo').value,
 
@@ -463,7 +474,24 @@
                     checkInNow: true
                 };
 
-                console.log('Walk-in payload:', payload);
+                const missing = [];
+                if (!payload.firstName) missing.push('First Name');
+                if (!payload.lastName) missing.push('Last Name');
+                if (!payload.phoneNo) missing.push('Phone Number');
+
+                if (missing.length > 0) {
+                    alert(`Please fill in: ${missing.join(', ')}`);
+                    return;
+                }
+
+                if (!payload.arrivalDate || !payload.departureDate ||
+                    new Date(payload.departureDate) <= new Date(payload.arrivalDate)) {
+                    alert('Check-out date must be after check-in date.');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating...';
 
                 const res = await fetch('/api/bookings/walkin', {
                     method: 'POST',
@@ -475,13 +503,15 @@
 
                 const result = await res.json();
 
-                console.log('Walk-in response:', result);
-
                 if (!res.ok) {
                     throw new Error(result.message || 'Request failed');
                 }
 
-                alert('Booking created');
+                alert(
+                    result.generatedPassword
+                        ? `Booking created. Temp password for guest: ${result.generatedPassword}`
+                        : 'Booking created'
+                );
 
                 resetWalkInForm();
                 closeWalkInModal();
@@ -491,6 +521,9 @@
             } catch (err) {
                 console.error(err);
                 alert(err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Booking';
             }
         }
 
