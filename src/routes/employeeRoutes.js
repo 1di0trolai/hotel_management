@@ -1,17 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const employeeController = require('../controllers/employeeController');
+const checkPermission = require('../middleware/checkPermission');
 
 // GET /api/employees
-router.get('/', employeeController.getAllEmployees);
+router.get('/', checkPermission('manage_employees'), employeeController.getAllEmployees);
 
 // GET /api/employees/roles
-router.get('/roles', employeeController.getRoles);
+router.get('/roles', checkPermission('manage_employees'), employeeController.getRoles);
 
 // POST /api/employees
-router.post('/', employeeController.addEmployee);
+router.post('/', checkPermission('manage_employees'), employeeController.addEmployee);
 
 // DELETE /api/employees/:id
-router.delete('/:id', employeeController.deleteEmployee);
+router.delete('/:id', checkPermission('manage_employees'), employeeController.deleteEmployee);
 
 module.exports = router;
