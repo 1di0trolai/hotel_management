@@ -8,6 +8,9 @@ router.get('/', roomController.getAllRooms);
 // POST /api/rooms/search
 router.post('/search', roomController.searchRooms);
 
+// POST /api/rooms/available-specific
+router.post('/available-specific', roomController.getAvailableSpecificRooms);
+
 // GET /api/rooms/status
 router.get('/status', roomController.getAllRoomsWithStatus);
 

@@ -60,3 +60,21 @@ exports.updateProfile = async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error' });
     }
 };
+
+exports.changePassword = async (req, res) => {
+    try {
+        const { guestId, currentPassword, newPassword } = req.body;
+        if (!guestId || !currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+        
+        const updatedGuest = await GuestModel.changePassword(guestId, currentPassword, newPassword);
+        res.status(200).json({ message: 'Password updated successfully', user: updatedGuest });
+    } catch (error) {
+        if (error.message === 'Incorrect current password' || error.message === 'Guest not found') {
+            return res.status(400).json({ message: error.message });
+        }
+        console.error("Change Password Error:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};

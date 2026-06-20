@@ -13,9 +13,9 @@ exports.getAllBookings = async (req, res) => {
 
 exports.createWalkinBooking = async (req, res) => {
     try {
-        const { firstName, lastName, email, phoneNo, comboParts, arrivalDate, departureDate, numAdults, numChildren, specialReq } = req.body;
+        const { firstName, lastName, email, phoneNo, roomNos, arrivalDate, departureDate, numAdults, numChildren, specialReq } = req.body;
         
-        if (!firstName || !lastName || !email || !comboParts || !arrivalDate || !departureDate) {
+        if (!firstName || !lastName || !email || !roomNos || roomNos.length === 0 || !arrivalDate || !departureDate) {
             return res.status(400).json({ message: 'All required fields must be provided' });
         }
 
@@ -24,10 +24,10 @@ exports.createWalkinBooking = async (req, res) => {
             guest = await GuestModel.register(firstName, lastName, email, '123456', phoneNo);
         }
 
-        const invoiceNo = await BookingModel.createBookingOrder(guest.GuestID, comboParts, arrivalDate, departureDate, numAdults, numChildren, specialReq);
-        res.status(201).json({ message: 'Booking order created successfully', invoiceNo: invoiceNo });
+        const invoiceNo = await BookingModel.createWalkinBookingDirect(guest.GuestID, roomNos, arrivalDate, departureDate, numAdults, numChildren, specialReq);
+        res.status(201).json({ message: 'Walkin booking created successfully', invoiceNo: invoiceNo });
     } catch (error) {
-        console.error("Error creating walkin booking order:", error);
+        console.error("Error creating walkin booking:", error);
         res.status(500).json({ message: error.message || 'Internal Server Error' });
     }
 };

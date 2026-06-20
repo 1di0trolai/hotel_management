@@ -10,6 +10,20 @@ exports.getAllRooms = async (req, res) => {
     }
 };
 
+exports.getAvailableSpecificRooms = async (req, res) => {
+    try {
+        const { arrivalDate, departureDate } = req.body;
+        if (!arrivalDate || !departureDate) {
+            return res.status(400).json({ message: 'Arrival and Departure dates are required' });
+        }
+        const rooms = await RoomModel.getAvailableSpecificRooms(arrivalDate, departureDate);
+        res.status(200).json(rooms);
+    } catch (error) {
+        console.error("Error fetching available specific rooms:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
 exports.searchRooms = async (req, res) => {
     try {
         const { arrivalDate, departureDate, guests, numRooms } = req.body;

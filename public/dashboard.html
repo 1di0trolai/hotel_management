@@ -176,23 +176,10 @@
                             </div>
                             
                             <div style="border-top:1px solid var(--glass-border); padding-top:1rem; margin-top:0.5rem;">
-                                <label style="color:#ccc; display:block; margin-bottom:0.5rem;">Room Selections</label>
-                                <div id="walkin-room-selections" style="display:flex; flex-direction:column; gap:0.5rem;">
-                                    <div style="display:grid; grid-template-columns: 2fr 1.5fr; gap:1rem;">
-                                        <select class="walkin-room-type" required style="width:100%; padding:0.5rem; background:var(--glass-bg); border:1px solid var(--glass-border); color:#fff; border-radius:6px;">
-                                            <option value="" style="color:#000;">Select Room Type</option>
-                                            <option value="Standard Twin" style="color:#000;">Standard Twin</option>
-                                            <option value="Standard Double" style="color:#000;">Standard Double</option>
-                                            <option value="Deluxe" style="color:#000;">Deluxe</option>
-                                            <option value="Suite" style="color:#000;">Suite</option>
-                                        </select>
-                                        <div style="display:flex; align-items:center; gap:0.5rem;">
-                                            <label style="color:#ccc; white-space:nowrap;">Rooms:</label>
-                                            <input type="number" class="walkin-room-qty" min="1" value="1" required style="width:100%; padding:0.5rem; background:var(--glass-bg); border:1px solid var(--glass-border); color:#fff; border-radius:6px;">
-                                        </div>
-                                    </div>
+                                <label style="color:#ccc; display:block; margin-bottom:0.5rem;">Select Available Rooms</label>
+                                <div id="walkin-room-select" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap:0.5rem; max-height:250px; overflow-y:auto; padding:0.5rem; background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:6px;">
+                                    <div style="color:#ccc; grid-column: 1 / -1;">Select dates first</div>
                                 </div>
-                                <button type="button" onclick="addWalkinRoomRow()" style="margin-top:0.5rem; background:transparent; border:1px solid var(--primary); color:var(--primary); padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; font-size:0.8rem;">+ Add Another Room Type</button>
                             </div>
 
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;">
@@ -889,29 +876,62 @@
             } catch (err) { console.error(err); alert('Network error'); }
         }
         // Walk-in booking JS
-        function addWalkinRoomRow() {
-            const container = document.getElementById('walkin-room-selections');
-            const div = document.createElement('div');
-            div.style.display = 'grid';
-            div.style.gridTemplateColumns = '2fr 1.5fr auto';
-            div.style.gap = '1rem';
-            div.style.alignItems = 'center';
-            div.innerHTML = `
-                <select class="walkin-room-type" required style="width:100%; padding:0.5rem; background:var(--glass-bg); border:1px solid var(--glass-border); color:#fff; border-radius:6px;">
-                    <option value="" style="color:#000;">Select Room Type</option>
-                    <option value="Standard Twin" style="color:#000;">Standard Twin</option>
-                    <option value="Standard Double" style="color:#000;">Standard Double</option>
-                    <option value="Deluxe" style="color:#000;">Deluxe</option>
-                    <option value="Suite" style="color:#000;">Suite</option>
-                </select>
-                <div style="display:flex; align-items:center; gap:0.5rem;">
-                    <label style="color:#ccc; white-space:nowrap;">Rooms:</label>
-                    <input type="number" class="walkin-room-qty" min="1" value="1" required style="width:100%; padding:0.5rem; background:var(--glass-bg); border:1px solid var(--glass-border); color:#fff; border-radius:6px;">
-                </div>
-                <button type="button" onclick="this.parentElement.remove()" style="background:transparent; border:none; color:#e74c3c; cursor:pointer; font-weight:bold; font-size:1.2rem;">&times;</button>
-            `;
-            container.appendChild(div);
+        async function checkAvailableRoomsForWalkin() {
+            const arr = document.getElementById('walkin-arrival').value;
+            const dep = document.getElementById('walkin-departure').value;
+            const select = document.getElementById('walkin-room-select');
+            
+            if (!arr || !dep || new Date(arr) >= new Date(dep)) {
+                select.innerHTML = '<div style="color:#ccc; grid-column: 1 / -1;">Select valid dates first</div>';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/rooms/available-specific', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ arrivalDate: arr, departureDate: dep })
+                });
+                if (res.ok) {
+                    const rooms = await res.json();
+                    select.innerHTML = '';
+                    if (rooms.length === 0) {
+                        select.innerHTML = '<div style="color:#e74c3c; grid-column: 1 / -1;">No rooms available</div>';
+                    } else {
+                        rooms.forEach(r => {
+                            const lbl = document.createElement('label');
+                            lbl.style.display = 'flex';
+                            lbl.style.alignItems = 'center';
+                            lbl.style.gap = '0.5rem';
+                            lbl.style.background = 'rgba(255, 255, 255, 0.1)';
+                            lbl.style.padding = '0.5rem';
+                            lbl.style.borderRadius = '6px';
+                            lbl.style.cursor = 'pointer';
+                            lbl.style.color = '#fff';
+                            lbl.style.fontSize = '0.9rem';
+                            
+                            const cb = document.createElement('input');
+                            cb.type = 'checkbox';
+                            cb.value = r.RoomNo;
+                            cb.className = 'walkin-room-checkbox';
+                            cb.style.cursor = 'pointer';
+
+                            const text = document.createElement('span');
+                            text.innerHTML = `<b>${r.RoomNo}</b><br><small style="color:#aaa;">${r.RoomType}</small>`;
+                            
+                            lbl.appendChild(cb);
+                            lbl.appendChild(text);
+                            select.appendChild(lbl);
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
         }
+
+        document.getElementById('walkin-arrival').addEventListener('change', checkAvailableRoomsForWalkin);
+        document.getElementById('walkin-departure').addEventListener('change', checkAvailableRoomsForWalkin);
 
         document.getElementById('walkin-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -924,28 +944,24 @@
             const numAdults = document.getElementById('walkin-adults').value;
             const numChildren = document.getElementById('walkin-children').value;
             
-            const comboParts = [];
-            const types = document.querySelectorAll('.walkin-room-type');
-            const qtys = document.querySelectorAll('.walkin-room-qty');
-            for (let i = 0; i < types.length; i++) {
-                if (types[i].value && qtys[i].value > 0) {
-                    comboParts.push({ type: types[i].value, count: parseInt(qtys[i].value) });
-                }
-            }
-            if (comboParts.length === 0) return alert('Please select at least one room type.');
+            const checkboxes = document.querySelectorAll('.walkin-room-checkbox:checked');
+            const roomNos = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (roomNos.length === 0) return alert('Please select at least one room.');
 
             try {
                 const res = await fetch('/api/bookings/walkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        firstName, lastName, email, phoneNo, arrivalDate, departureDate, numAdults, numChildren, comboParts
+                        firstName, lastName, email, phoneNo, arrivalDate, departureDate, numAdults, numChildren, roomNos
                     })
                 });
                 if (res.ok) {
                     alert('Walk-in booking created successfully!');
                     document.getElementById('walkin-modal').style.display='none';
                     document.getElementById('walkin-form').reset();
+                    document.getElementById('walkin-room-select').innerHTML = '<div style="color:#ccc; grid-column: 1 / -1;">Select dates first</div>';
                     fetchBookings();
                     fetchStatistics();
                 } else {
