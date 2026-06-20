@@ -6,22 +6,23 @@ class BookingModel {
             const pool = await poolPromise;
             const result = await pool.request().query(`
                 SELECT 
-                    b.InvoiceNo AS BookingID, 
+                    b.BookingID, 
+                    b.InvoiceNo, 
                     g.FirstName + ' ' + g.LastName AS GuestName, 
                     g.Email AS GuestEmail,
                     g.PhoneNo AS GuestPhone,
-                    STRING_AGG(r.RoomType + ' (' + b.RoomNo + ')', ', ') AS RoomType, 
+                    r.RoomType, 
+                    b.RoomNo,
                     b.ArrivalDate, 
                     b.DepartureDate, 
                     b.BookingStatus,
-                    MAX(b.NumAdults) AS NumAdults, 
-                    MAX(b.NumChildren) AS NumChildren, 
-                    MAX(b.SpecialReq) AS SpecialReq
+                    b.NumAdults, 
+                    b.NumChildren, 
+                    b.SpecialReq
                 FROM Booking b
                 INNER JOIN Guest g ON b.GuestID = g.GuestID
                 INNER JOIN Room r ON b.RoomNo = r.RoomNo
-                GROUP BY b.InvoiceNo, g.FirstName, g.LastName, g.Email, g.PhoneNo, b.ArrivalDate, b.DepartureDate, b.BookingStatus
-                ORDER BY b.InvoiceNo DESC
+                ORDER BY b.BookingID DESC
             `);
             return result.recordset;
         } catch (error) {
@@ -30,21 +31,28 @@ class BookingModel {
     }
 
     static async createBooking(guestID, roomType, arrivalDate, departureDate) {
+        const pool = await poolPromise;
+        const transaction = pool.transaction();
+
+        await transaction.begin();
+
         try {
-            const pool = await poolPromise;
-            
-            // Find a room of this type that is NOT booked during these dates
-            const roomQuery = await pool.request()
+            // Lock candidate rooms of this type so a concurrent booking can't
+            // grab the same room between the SELECT and the INSERT.
+            const roomQuery = await transaction.request()
                 .input('RoomType', roomType)
                 .input('ArrivalDate', arrivalDate)
                 .input('DepartureDate', departureDate)
                 .query(`
-                    SELECT TOP 1 RoomNo, HotelCode 
-                    FROM Room 
-                    WHERE RoomType = @RoomType
-                    AND RoomNo NOT IN (
-                        SELECT RoomNo FROM Booking 
-                        WHERE ArrivalDate < @DepartureDate AND DepartureDate > @ArrivalDate
+                    SELECT TOP 1 r.RoomNo, r.HotelCode, rt.RoomPrice
+                    FROM Room r WITH (UPDLOCK, HOLDLOCK)
+                    JOIN RoomType rt ON r.RoomType = rt.RoomType
+                    WHERE r.RoomType = @RoomType
+                    AND r.RoomNo NOT IN (
+                        SELECT RoomNo FROM Booking
+                        WHERE ArrivalDate < @DepartureDate
+                        AND DepartureDate > @ArrivalDate
+                        AND BookingStatus NOT IN ('Cancelled')
                     )
                 `);
 
@@ -52,25 +60,44 @@ class BookingModel {
                 throw new Error('No rooms available for this type during the selected dates.');
             }
 
-            const roomNo = roomQuery.recordset[0].RoomNo;
-            const hotelCode = roomQuery.recordset[0].HotelCode;
+            const { RoomNo: roomNo, HotelCode: hotelCode, RoomPrice: roomPrice } = roomQuery.recordset[0];
 
-            // Insert Booking
-            const result = await pool.request()
+            // Calculate total and create the Bill
+            const nights = Math.round((new Date(departureDate) - new Date(arrivalDate)) / (1000 * 60 * 60 * 24));
+            const totalAmount = nights * Number(roomPrice);
+
+            const billResult = await transaction.request()
+                .input('GuestID', guestID)
+                .input('TotalAmount', totalAmount)
+                .query(`
+                    INSERT INTO Bill (GuestID, TotalAmount, PaymentStatus)
+                    OUTPUT INSERTED.InvoiceNo
+                    VALUES (@GuestID, @TotalAmount, 'Unpaid')
+                `);
+
+            const invoiceNo = billResult.recordset[0].InvoiceNo;
+
+            // Insert Booking, now linked to the Bill
+            const result = await transaction.request()
                 .input('HotelCode', hotelCode)
                 .input('GuestID', guestID)
                 .input('RoomNo', roomNo)
+                .input('InvoiceNo', invoiceNo)
                 .input('BookingDate', new Date())
                 .input('ArrivalDate', arrivalDate)
                 .input('DepartureDate', departureDate)
                 .query(`
-                    INSERT INTO Booking (HotelCode, GuestID, RoomNo, BookingDate, ArrivalDate, DepartureDate)
+                    INSERT INTO Booking (HotelCode, GuestID, RoomNo, InvoiceNo, BookingDate, ArrivalDate, DepartureDate, BookingStatus)
                     OUTPUT INSERTED.BookingID
-                    VALUES (@HotelCode, @GuestID, @RoomNo, @BookingDate, @ArrivalDate, @DepartureDate)
+                    VALUES (@HotelCode, @GuestID, @RoomNo, @InvoiceNo, @BookingDate, @ArrivalDate, @DepartureDate, 'Confirmed')
                 `);
 
-            return result.recordset[0];
+            await transaction.commit();
+
+            return { ...result.recordset[0], invoiceNo, totalAmount };
+
         } catch (error) {
+            await transaction.rollback();
             throw error;
         }
     }
@@ -281,6 +308,135 @@ class BookingModel {
             return result.rowsAffected[0] > 0;
         } catch (error) {
             throw error;
+        }
+    }
+    static async createWalkInBooking(data) {
+        const pool = await poolPromise;
+        const transaction = pool.transaction();
+
+        await transaction.begin();
+
+        try {
+            const roomResult = await transaction.request()
+                .input('RoomNo', data.roomNo)
+                .query(`
+                    SELECT r.RoomStatus, rt.RoomPrice
+                    FROM Room r WITH (UPDLOCK, HOLDLOCK)
+                    JOIN RoomType rt ON r.RoomType = rt.RoomType
+                    WHERE r.RoomNo = @RoomNo
+                `);
+
+            if (roomResult.recordset.length === 0) {
+                throw new Error('Room not found.');
+            }
+
+            const room = roomResult.recordset[0];
+
+            const isAvailable = room.RoomStatus === 'Available' || room.RoomStatus === null;
+
+            if (!isAvailable) {
+                throw new Error('Room is no longer available.');
+            }
+            const arrival = new Date(data.arrivalDate);
+            const departure = new Date(data.departureDate);
+            const nights = Math.round((departure - arrival) / (1000 * 60 * 60 * 24));
+
+            if (!Number.isFinite(nights) || nights < 1) {
+                throw new Error('Departure date must be after arrival date.');
+            }
+
+            const totalAmount = nights * Number(room.RoomPrice);
+
+            const billResult =
+                await transaction.request()
+                .input('GuestID', data.guestId)
+                .input('TotalAmount', totalAmount)
+                .query(`
+                    INSERT INTO Bill
+                    (
+                        GuestID,
+                        TotalAmount,
+                        PaymentStatus
+                    )
+                    OUTPUT INSERTED.InvoiceNo
+                    VALUES
+                    (
+                        @GuestID,
+                        @TotalAmount,
+                        'Unpaid'
+                    )
+                `);
+
+            const invoiceNo =
+                billResult.recordset[0].InvoiceNo;
+
+            await transaction.request()
+                .input('HotelCode', data.hotelCode)
+                .input('GuestID', data.guestId)
+                .input('RoomNo', data.roomNo)
+                .input('InvoiceNo', invoiceNo)
+                .input('ArrivalDate', data.arrivalDate)
+                .input('DepartureDate', data.departureDate)
+                .input('NumAdults', data.adults)
+                .input('NumChildren', data.children)
+                .input(
+                    'BookingStatus',
+                    data.checkInNow
+                        ? 'CheckedIn'
+                        : 'Confirmed'
+                )
+                .query(`
+                    INSERT INTO Booking
+                    (
+                        HotelCode,
+                        GuestID,
+                        RoomNo,
+                        InvoiceNo,
+                        BookingDate,
+                        BookingTime,
+                        ArrivalDate,
+                        DepartureDate,
+                        NumAdults,
+                        NumChildren,
+                        BookingStatus
+                    )
+                    VALUES
+                    (
+                        @HotelCode,
+                        @GuestID,
+                        @RoomNo,
+                        @InvoiceNo,
+                        CAST(GETDATE() AS DATE),
+                        CAST(GETDATE() AS TIME),
+                        @ArrivalDate,
+                        @DepartureDate,
+                        @NumAdults,
+                        @NumChildren,
+                        @BookingStatus
+                    )
+                `);
+
+            if (data.checkInNow) {
+                await transaction.request()
+                    .input('RoomNo', data.roomNo)
+                    .query(`
+                        UPDATE Room
+                        SET RoomStatus='Occupied'
+                        WHERE RoomNo=@RoomNo
+                    `);
+            }
+
+            await transaction.commit();
+
+            return {
+                invoiceNo,
+                totalAmount,
+                nights
+            };
+
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
         }
     }
 }

@@ -9,6 +9,8 @@ router.get('/', checkPermission('view_bookings'), bookingController.getAllBookin
 // POST /api/bookings/order (Batch booking)
 router.post('/order', bookingController.createBookingOrder);
 
+router.post('/walkin', checkPermission('manage_bookings'), bookingController.createWalkInBooking);
+
 // POST /api/bookings
 router.post('/', bookingController.createBooking);
 

@@ -19,6 +19,16 @@ exports.createEmployee = async (req, res) => {
             return res.status(400).json({ message: 'All fields are required' });
         }
 
+        // Only Admins can create other Admin accounts. A Manager creating an
+        // employee with the Admin role would be a privilege escalation, so we
+        // verify the target role here regardless of what the client sent.
+        if (req.employeeRole !== 'Admin') {
+            const targetRole = await EmployeeModel.getRoleById(roleId);
+            if (targetRole && targetRole.RoleTitle === 'Admin') {
+                return res.status(403).json({ message: 'Only an Admin can create another Admin account.' });
+            }
+        }
+
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
         
@@ -39,10 +49,15 @@ exports.createEmployee = async (req, res) => {
 exports.deleteEmployee = async (req, res) => {
     try {
         const employeeId = req.params.id;
-        
-        // Prevent deleting the main admin account (optional safety)
-        if (employeeId == 1) {
-            return res.status(403).json({ message: 'Cannot delete the main system administrator' });
+
+        const target = await EmployeeModel.getEmployeeById(employeeId);
+        if (!target) {
+            return res.status(404).json({ message: 'Employee not found' });
+        }
+
+        // Only an Admin can delete another Admin account.
+        if (target.RoleTitle === 'Admin' && req.employeeRole !== 'Admin') {
+            return res.status(403).json({ message: 'Only an Admin can delete an Admin account.' });
         }
 
         await EmployeeModel.deleteEmployee(employeeId);

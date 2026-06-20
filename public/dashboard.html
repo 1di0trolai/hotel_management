@@ -92,6 +92,75 @@
 
         .tab-section { display: none; }
         .tab-section.active { display: block; }
+
+        .walkin-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .walkin-modal {
+            width: 100%;
+            max-width: 700px;
+             background: var(--bg-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .walkin-modal h3 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .walkin-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .walkin-modal input,
+        .walkin-modal select {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--bg-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .walkin-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-primary {
+            background: rgba(203,160,82,0.15);
+            color: var(--primary);
+            border: 1px solid rgba(203,160,82,0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            color: #ccc;
+            border: 1px solid var(--glass-border);
+        }
     </style>
 </head>
 <body>
@@ -101,6 +170,7 @@
             <div class="nav-item active" data-tab="bookings" id="nav-bookings">Bookings</div>
             <div class="nav-item" data-tab="rooms" id="nav-rooms">Rooms</div>
             <div class="nav-item" data-tab="bills" id="nav-bills">Bills</div>
+            <div class="nav-item" data-tab="employees" id="nav-employees">Employees</div>
         </aside>
         <main class="main-content">
             <div class="header">
@@ -166,10 +236,15 @@
                             <th>Occupancy</th>
                             <th>Price</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="rooms-tbody">
-                        <tr><td colspan="6" style="text-align:center">Loading...</td></tr>
+                        <tr>
+                            <td colspan="7" style="text-align:center">
+                                Loading...
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </section>
@@ -193,7 +268,108 @@
                     </tbody>
                 </table>
             </section>
+            
+            <!-- Employees Tab -->
+            <section class="tab-section" id="tab-employees">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+                    <button class="btn-action btn-primary" onclick="openAddEmployeeModal()">+ Add Employee</button>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Employee ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employees-tbody">
+                        <tr><td colspan="5" style="text-align:center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </section>
         </main>
+    </div>
+
+    <div id="walkin-modal" class="walkin-overlay">
+        <div class="walkin-modal">
+            <h3>Create Booking</h3>
+
+            <div class="walkin-grid">
+                <input id="wi-firstName" placeholder="First Name">
+                <input id="wi-lastName" placeholder="Last Name">
+
+                <input id="wi-phone" placeholder="Phone">
+                <input id="wi-email" placeholder="Email">
+
+                <input id="wi-passport" placeholder="Passport">
+                <input id="wi-roomNo" readonly>
+
+                <div>
+                    <label>Adults</label>
+                    <input
+                        id="wi-adults"
+                        type="number"
+                        min="1"
+                        value="1">
+                </div>
+
+                <div>
+                    <label>Children</label>
+                    <input
+                        id="wi-children"
+                        type="number"
+                        min="0"
+                        value="0">
+                </div>
+
+                <div>
+                    <label for="wi-arrival">Check-in Date</label>
+                    <input id="wi-arrival" type="date">
+                </div>
+
+                <div>
+                    <label for="wi-departure">Check-out Date</label>
+                    <input id="wi-departure" type="date">
+                </div>
+            </div>
+
+            <div class="walkin-actions">
+                <button class="btn-action btn-primary"
+                        onclick="createWalkInBooking()">
+                    Create Booking
+                </button>
+
+                <button class="btn-action btn-secondary"
+                        onclick="closeWalkInModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-employee-modal" class="walkin-overlay">
+        <div class="walkin-modal">
+            <h3>Add Employee</h3>
+
+            <div class="walkin-grid">
+                <input id="ae-firstName" placeholder="First Name">
+                <input id="ae-lastName" placeholder="Last Name">
+
+                <input id="ae-email" placeholder="Email" type="email">
+                <input id="ae-password" placeholder="Temporary Password" type="password">
+
+                <select id="ae-roleId">
+                    <option value="">Select Role...</option>
+                </select>
+            </div>
+
+            <div class="walkin-actions">
+                <button class="btn-action btn-primary" onclick="createEmployee()">Add Employee</button>
+                <button class="btn-action btn-secondary" onclick="closeAddEmployeeModal()">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -216,6 +392,7 @@
             if (!perms.includes('view_bookings')) document.getElementById('nav-bookings').style.display = 'none';
             if (!perms.includes('view_rooms')) document.getElementById('nav-rooms').style.display = 'none';
             if (!perms.includes('view_bills')) document.getElementById('nav-bills').style.display = 'none';
+            if (!perms.includes('manage_employees')) document.getElementById('nav-employees').style.display = 'none';
 
             // Activate first visible tab
             const firstVisible = document.querySelector('.nav-item:not([style*="display: none"])');
@@ -240,6 +417,7 @@
             if (tab === 'bookings') { fetchStatistics(); fetchBookings(); }
             if (tab === 'rooms') fetchRooms();
             if (tab === 'bills') fetchBills();
+            if (tab === 'employees') fetchEmployees();
         }
 
         function toggleProfileMenu(e) {
@@ -257,6 +435,15 @@
         async function fetchStatistics() {
             try {
                 const res = await fetch(`/api/bookings/statistics?employeeId=${emp.EmployeeID}`);
+
+                if (res.status === 403) {
+                    document.getElementById('stat-total').textContent = '—';
+                    document.getElementById('stat-checkin').textContent = '—';
+                    document.getElementById('stat-checkout').textContent = '—';
+                    document.getElementById('stat-rate').textContent = '—';
+                    return;
+                }
+
                 const stats = await res.json();
                 document.getElementById('stat-total').textContent = stats.TotalBookings;
                 document.getElementById('stat-checkin').textContent = stats.CheckedIn;
@@ -276,6 +463,128 @@
                 if (res.ok) { fetchStatistics(); fetchBookings(); }
                 else { const err = await res.json(); alert(err.message || 'Failed to update status'); }
             } catch (error) { console.error(error); alert('Network error'); }
+        }
+
+        function openWalkInModal(roomNo) {
+            document.getElementById('wi-roomNo').value = roomNo;
+
+            const today = new Date();
+
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+
+            document.getElementById('wi-arrival').value =
+                today.toISOString().split('T')[0];
+
+            document.getElementById('wi-departure').value =
+                tomorrow.toISOString().split('T')[0];
+
+            document.getElementById('walkin-modal').style.display = 'flex';
+        }
+
+        function closeWalkInModal() {
+            document.getElementById('walkin-modal').style.display = 'none';
+        }
+
+        document.getElementById('wi-arrival')
+            .addEventListener('change', e => {
+
+                const arrival = new Date(e.target.value);
+                arrival.setDate(arrival.getDate() + 1);
+
+                document.getElementById('wi-departure').value =
+                    arrival.toISOString().split('T')[0];
+            });
+                
+        async function createWalkInBooking() {
+            const submitBtn = document.querySelector('.walkin-actions .btn-primary');
+
+            try {
+
+                const payload = {
+                    firstName: document.getElementById('wi-firstName').value.trim(),
+                    lastName: document.getElementById('wi-lastName').value.trim(),
+                    phoneNo: document.getElementById('wi-phone').value.trim(),
+                    email: document.getElementById('wi-email').value.trim(),
+                    passportNo: document.getElementById('wi-passport').value.trim(),
+
+                    roomNo: document.getElementById('wi-roomNo').value,
+
+                    arrivalDate: document.getElementById('wi-arrival').value,
+                    departureDate: document.getElementById('wi-departure').value,
+
+                    adults: parseInt(document.getElementById('wi-adults').value, 10),
+                    children: parseInt(document.getElementById('wi-children').value, 10),
+
+                    employeeId: emp.EmployeeID,
+                    hotelCode: emp.HotelCode,
+                    checkInNow: true
+                };
+
+                const missing = [];
+                if (!payload.firstName) missing.push('First Name');
+                if (!payload.lastName) missing.push('Last Name');
+                if (!payload.phoneNo) missing.push('Phone Number');
+
+                if (missing.length > 0) {
+                    alert(`Please fill in: ${missing.join(', ')}`);
+                    return;
+                }
+
+                if (!payload.arrivalDate || !payload.departureDate ||
+                    new Date(payload.departureDate) <= new Date(payload.arrivalDate)) {
+                    alert('Check-out date must be after check-in date.');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating...';
+
+                const res = await fetch('/api/bookings/walkin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(result.message || 'Request failed');
+                }
+
+                alert(
+                    result.generatedPassword
+                        ? `Booking created. Temp password for guest: ${result.generatedPassword}`
+                        : 'Booking created'
+                );
+
+                resetWalkInForm();
+                closeWalkInModal();
+                fetchRooms();
+                fetchBookings();
+
+            } catch (err) {
+                console.error(err);
+                alert(err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Booking';
+            }
+        }
+
+        function resetWalkInForm() {
+            document.getElementById('wi-firstName').value = '';
+            document.getElementById('wi-lastName').value = '';
+            document.getElementById('wi-phone').value = '';
+            document.getElementById('wi-email').value = '';
+            document.getElementById('wi-passport').value = '';
+
+            document.getElementById('wi-adults').value = 1;
+            document.getElementById('wi-children').value = 0;
+
+            document.getElementById('wi-roomNo').value = '';
         }
 
         async function fetchBookings() {
@@ -344,18 +653,45 @@
 
                 tbody.innerHTML = '';
                 const canManage = (emp.Permissions || []).includes('manage_rooms');
+                const role = emp.RoleTitle;
+
+                // Role-specific status options. Housekeeper and Maintenance only get
+                // the one status pair relevant to their job; everyone else with
+                // manage_rooms (Receptionist/Manager/Admin) gets the full set.
+                const statusOptionsByRole = {
+                    Housekeeper: ['Available', 'Cleaning'],
+                    Maintenance: ['Available', 'Maintenance']
+                };
+                const allowedStatuses = statusOptionsByRole[role] || ['Available', 'Occupied', 'Cleaning', 'Maintenance'];
 
                 rooms.forEach(r => {
                     const status = r.RoomStatus || 'Available';
                     const statusClass = 'status-' + status.toLowerCase();
-                    const statusCell = canManage
+
+                    // If the room's current status isn't one this role is allowed to set
+                    // (e.g. a housekeeper viewing an Occupied room), show it read-only
+                    // instead of offering a dropdown that can't actually save that value back.
+                    const canEditThisRoom = canManage && allowedStatuses.includes(status);
+
+                    const statusCell = canEditThisRoom
                         ? `<select class="status-select" onchange="updateRoomStatus('${r.RoomNo}', this.value)">
-                            <option value="Available" ${status === 'Available' ? 'selected' : ''}>Available</option>
-                            <option value="Occupied" ${status === 'Occupied' ? 'selected' : ''}>Occupied</option>
-                            <option value="Cleaning" ${status === 'Cleaning' ? 'selected' : ''}>Cleaning</option>
-                            <option value="Maintenance" ${status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
-                           </select>`
+                            ${allowedStatuses.map(s =>
+                                `<option value="${s}" ${status === s ? 'selected' : ''}>${s}</option>`
+                            ).join('')}
+                        </select>`
                         : `<span class="room-status-badge ${statusClass}">${status}</span>`;
+
+                    const canCreateBooking =
+                        emp?.Permissions?.includes('manage_bookings');
+
+                    const walkInBtn =
+                        status === 'Available' && canCreateBooking
+                        ? `<button
+                                class="btn-action btn-checkin"
+                                onclick="openWalkInModal('${r.RoomNo}')">
+                                Walk-in
+                        </button>`
+                        : '-';
 
                     tbody.innerHTML += `
                         <tr>
@@ -365,6 +701,7 @@
                             <td>${r.Occupancy}</td>
                             <td>$${r.RoomPrice}</td>
                             <td>${statusCell}</td>
+                            <td>${walkInBtn}</td>
                         </tr>
                     `;
                 });
@@ -378,7 +715,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status, employeeId: emp.EmployeeID })
                 });
-                if (!res.ok) { const err = await res.json(); alert(err.message || 'Failed to update room status'); }
+                if (res.ok) { fetchStatistics(); fetchBookings(); }
+                else { const err = await res.json(); alert(err.message || 'Failed to update status'); }
             } catch (error) { console.error(error); alert('Network error'); }
         }
 
@@ -434,6 +772,169 @@
                 if (res.ok) fetchBills();
                 else { const err = await res.json(); alert(err.message || 'Failed to update invoice'); }
             } catch (error) { console.error(error); alert('Network error'); }
+        }
+
+        // ---------- EMPLOYEES ----------
+        let allRoles = [];
+
+        async function fetchEmployees() {
+            try {
+                const response = await fetch(`/api/employees?employeeId=${emp.EmployeeID}`);
+                const employees = await response.json();
+                const tbody = document.getElementById('employees-tbody');
+
+                if (response.status === 403) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">You do not have permission to view this.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                if (employees.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center">No employees found.</td></tr>';
+                    return;
+                }
+
+                const isAdmin = emp.RoleTitle === 'Admin';
+
+                employees.forEach(e => {
+                    const canDeleteThisRow = isAdmin || e.RoleTitle !== 'Admin';
+
+                    const deleteBtn = canDeleteThisRow
+                        ? `<button class="btn-action btn-cancel" onclick="deleteEmployee(${e.EmployeeID}, '${e.FirstName} ${e.LastName}')">
+                                Delete
+                        </button>`
+                        : '-';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>#${e.EmployeeID}</td>
+                            <td>${e.FirstName} ${e.LastName}</td>
+                            <td>${e.Email}</td>
+                            <td>${e.RoleTitle}</td>
+                            <td>${deleteBtn}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) { console.error(error); }
+        }
+
+        async function fetchRoles() {
+            try {
+                const response = await fetch(`/api/employees/roles?employeeId=${emp.EmployeeID}`);
+                if (!response.ok) return;
+                allRoles = await response.json();
+
+                // Only an Admin can grant the Admin role to someone else.
+                const visibleRoles = emp.RoleTitle === 'Admin'
+                    ? allRoles
+                    : allRoles.filter(r => r.RoleTitle !== 'Admin');
+
+                const select = document.getElementById('ae-roleId');
+                select.innerHTML = '<option value="">Select Role...</option>' +
+                    visibleRoles.map(r => `<option value="${r.RoleID}">${r.RoleTitle}</option>`).join('');
+            } catch (error) { console.error(error); }
+        }
+
+        function openAddEmployeeModal() {
+            fetchRoles();
+            document.getElementById('add-employee-modal').style.display = 'flex';
+        }
+
+        function closeAddEmployeeModal() {
+            document.getElementById('add-employee-modal').style.display = 'none';
+            resetAddEmployeeForm();
+        }
+
+        function resetAddEmployeeForm() {
+            document.getElementById('ae-firstName').value = '';
+            document.getElementById('ae-lastName').value = '';
+            document.getElementById('ae-email').value = '';
+            document.getElementById('ae-password').value = '';
+            document.getElementById('ae-roleId').value = '';
+        }
+
+        async function createEmployee() {
+            const submitBtn = document.querySelector('#add-employee-modal .btn-primary');
+
+            try {
+                const payload = {
+                    firstName: document.getElementById('ae-firstName').value.trim(),
+                    lastName: document.getElementById('ae-lastName').value.trim(),
+                    email: document.getElementById('ae-email').value.trim(),
+                    password: document.getElementById('ae-password').value,
+                    roleId: document.getElementById('ae-roleId').value,
+                    employeeId: emp.EmployeeID
+                };
+
+                const missing = [];
+                if (!payload.firstName) missing.push('First Name');
+                if (!payload.lastName) missing.push('Last Name');
+                if (!payload.email) missing.push('Email');
+                if (!payload.password) missing.push('Password');
+                if (!payload.roleId) missing.push('Role');
+
+                if (missing.length > 0) {
+                    alert(`Please fill in: ${missing.join(', ')}`);
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Adding...';
+
+                const res = await fetch('/api/employees', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(result.message || 'Failed to add employee');
+                }
+
+                alert('Employee added successfully');
+                closeAddEmployeeModal();
+                fetchEmployees();
+
+            } catch (err) {
+                console.error(err);
+                alert(err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Add Employee';
+            }
+        }
+
+        async function deleteEmployee(employeeId, employeeName) {
+            if (employeeId === emp.EmployeeID) {
+                alert("You can't delete your own account while logged in.");
+                return;
+            }
+
+            const confirmed = confirm(
+                `Are you sure you want to permanently delete ${employeeName}?\n\n` +
+                `This cannot be undone — their account will be removed immediately.`
+            );
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/api/employees/${employeeId}?employeeId=${emp.EmployeeID}`, {
+                    method: 'DELETE'
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    alert(err.message || 'Failed to delete employee');
+                    return;
+                }
+
+                fetchEmployees();
+
+            } catch (error) {
+                console.error(error);
+                alert('Network error');
+            }
         }
     </script>
 </body>

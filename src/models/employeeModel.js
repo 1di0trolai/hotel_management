@@ -9,7 +9,7 @@ class EmployeeModel {
             const result = await pool.request()
                 .input('Email', email)
                 .query(`
-                    SELECT e.EmployeeID, e.FirstName, e.LastName, e.Email, e.Password, e.RoleID, r.RoleTitle 
+                    SELECT e.EmployeeID, e.FirstName, e.LastName, e.Email, e.Password, e.RoleID, e.HotelCode, r.RoleTitle 
                     FROM Employee e
                     INNER JOIN Role r ON e.RoleID = r.RoleID
                     WHERE e.Email = @Email
@@ -100,6 +100,35 @@ class EmployeeModel {
                 SELECT RoleID, RoleTitle FROM Role
             `);
             return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getRoleById(roleId) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('RoleID', roleId)
+                .query(`SELECT RoleID, RoleTitle FROM Role WHERE RoleID = @RoleID`);
+            return result.recordset[0] || null;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getEmployeeById(employeeId) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('EmployeeID', employeeId)
+                .query(`
+                    SELECT e.EmployeeID, e.FirstName, e.LastName, e.Email, r.RoleTitle
+                    FROM Employee e
+                    INNER JOIN Role r ON e.RoleID = r.RoleID
+                    WHERE e.EmployeeID = @EmployeeID
+                `);
+            return result.recordset[0] || null;
         } catch (error) {
             throw error;
         }

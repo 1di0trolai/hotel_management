@@ -4,7 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js",
+    "seed:admin": "node src/utils/seed_admin.js",
+    "seed:staff": "node src/utils/seed_staff.js",
+    "seed:guest": "node src/utils/seed_guest.js",
+    "seed": "npm run seed:admin && npm run seed:staff && npm run seed:guest"
+
   },
   "keywords": [],
   "author": "",
