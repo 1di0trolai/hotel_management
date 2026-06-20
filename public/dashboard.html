@@ -351,34 +351,43 @@
             document.getElementById('profile-name').textContent = emp.FirstName;
             document.getElementById('profile-role').textContent = emp.RoleTitle;
 
-            // Permission-gate nav items
+            // Permission-gate nav items — driven by the real Permissions array from login,
+            // not hardcoded role names. Works for every role, including ones added later.
+            const perms = emp.Permissions || [];
             const isAdmin = emp.RoleTitle === 'Admin';
-            const isManager = emp.RoleTitle === 'Manager';
-            const isRecep = emp.RoleTitle === 'Receptionist';
-            const isHousekeeper = emp.RoleTitle === 'Housekeeper';
-            
-            const canManageEmployees = isAdmin || isManager;
-            const canViewBookings = isManager || isRecep;
-            const canViewRooms = isManager || isRecep || isHousekeeper;
-            const canViewBills = isRecep;
-            const canViewStats = isManager;
+
+            const canViewBookings = perms.includes('view_bookings');
+            const canManageBookings = perms.includes('manage_bookings');
+            const canViewRooms = perms.includes('view_rooms');
+            const canViewBills = perms.includes('view_bills');
+            const canManageEmployees = perms.includes('manage_employees');
+            const canViewStats = perms.includes('view_statistics');
 
             if (!canViewBookings) document.getElementById('nav-bookings').style.display = 'none';
+            if (!canManageBookings) document.getElementById('walkin-booking-btn-container').style.display = 'none';
             if (!canViewRooms) document.getElementById('nav-rooms').style.display = 'none';
             if (!canViewBills) document.getElementById('nav-bills').style.display = 'none';
             if (!canManageEmployees) document.getElementById('nav-employees').style.display = 'none';
             if (!canViewStats) document.getElementById('stats-container').style.display = 'none';
-            
-            if (isAdmin || isManager) {
+
+            if (isAdmin || perms.includes('view_statistics')) {
                 document.getElementById('stat-revenue-card').style.display = 'block';
                 document.getElementById('manage-pricing-btn-container').style.display = 'block';
             } else {
                 document.getElementById('manage-pricing-btn-container').style.display = 'none';
             }
 
-            // Activate first visible tab
+            // Activate first visible tab — also clear the hardcoded 'active' default
+            // from the HTML so a role with zero matching tabs doesn't show stale content.
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.tab-section').forEach(section => section.classList.remove('active'));
+
             const firstVisible = document.querySelector('.nav-item:not([style*="display: none"])');
-            if (firstVisible) switchTab(firstVisible.dataset.tab);
+            if (firstVisible) {
+                switchTab(firstVisible.dataset.tab);
+            } else {
+                document.getElementById('tab-title').textContent = 'No access';
+            }
 
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.addEventListener('click', () => switchTab(item.dataset.tab));
@@ -623,29 +632,32 @@
                 }
 
                 tbody.innerHTML = '';
-                let displayRooms = rooms;
-                if (emp.RoleTitle === 'Housekeeper') {
-                    displayRooms = rooms.filter(r => r.RoomStatus === 'Cleaning');
-                }
 
-                if (displayRooms.length === 0) {
+                if (rooms.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No rooms found.</td></tr>';
                     return;
                 }
 
-                displayRooms.forEach(r => {
+                rooms.forEach(r => {
                     const status = r.RoomStatus || 'Available';
                     const statusClass = 'status-' + status.toLowerCase();
                     let actionHtml = '';
 
-                    if (emp.RoleTitle === 'Manager') {
-                        if (status !== 'Maintenance') {
-                            actionHtml = `<button class="btn-action" style="background:#e74c3c; color:#fff; margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Maintenance')">To Maintenance</button>`;
-                        } else {
+                    if (emp.RoleTitle === 'Manager' || emp.RoleTitle === 'Receptionist') {
+                        if (status === 'Available') {
+                            actionHtml = `<button class="btn-action" style="background:#f39c12; color:#fff; margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Cleaning')">Needs Cleaning</button>`;
+                            actionHtml += `<button class="btn-action" style="background:#e74c3c; color:#fff; margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Maintenance')">Needs Maintenance</button>`;
+                        } else if (status === 'Maintenance' || status === 'Cleaning') {
                             actionHtml = `<button class="btn-action btn-checkin" style="margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Available')">To Available</button>`;
                         }
-                    } else if (emp.RoleTitle === 'Housekeeper') {
+                    }
+
+                    if (emp.RoleTitle === 'Housekeeper' && status === 'Cleaning') {
                         actionHtml = `<button class="btn-action btn-checkin" style="margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Available')">Mark Cleaned</button>`;
+                    }
+
+                    if (emp.RoleTitle === 'Maintenance' && status === 'Maintenance') {
+                        actionHtml = `<button class="btn-action btn-checkin" style="margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Available')">Mark Fixed</button>`;
                     }
 
                     const badgeHtml = `<span class="room-status-badge ${statusClass}">${status}</span>`;

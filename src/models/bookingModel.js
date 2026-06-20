@@ -10,14 +10,14 @@ class BookingModel {
                     g.FirstName + ' ' + g.LastName AS GuestName, 
                     g.Email AS GuestEmail,
                     g.PhoneNo AS GuestPhone,
-                    STRING_AGG(COALESCE(r.RoomType, b.RoomType) + COALESCE(' (' + b.RoomNo + ')', ' (Unassigned)'), ', ') AS RoomType, 
+                    STRING_AGG(COALESCE(r.RoomType, 'Unassigned') + COALESCE(' (' + b.RoomNo + ')', ' (Unassigned)'), ', ') AS RoomType, 
                     b.ArrivalDate, 
                     b.DepartureDate, 
                     b.BookingStatus,
                     MAX(b.NumAdults) AS NumAdults, 
                     MAX(b.NumChildren) AS NumChildren, 
                     MAX(b.SpecialReq) AS SpecialReq,
-                    MAX(CAST(b.CancelReason AS VARCHAR(MAX))) AS CancelReason
+                    NULL AS CancelReason
                 FROM Booking b
                 INNER JOIN Guest g ON b.GuestID = g.GuestID
                 LEFT JOIN Room r ON b.RoomNo = r.RoomNo
@@ -103,10 +103,6 @@ class BookingModel {
                 const request = transaction.request()
                     .input('InvoiceNo', invoiceNo)
                     .input('Status', status);
-                
-                if (status === 'Cancelled' && cancelReason) {
-                    request.input('CancelReason', cancelReason);
-                }
 
                 const result = await request.query(updateQuery);
                 
@@ -321,13 +317,12 @@ class BookingModel {
                 const updateRes = await transaction.request()
                     .input('BookingID', bookingId)
                     .input('GuestID', guestId)
-                    .input('CancelReason', cancelReason)
                     .query(`
                         UPDATE Booking
-                        SET BookingStatus = 'Cancelled', CancelReason = @CancelReason
+                        SET BookingStatus = 'Cancelled'
                         WHERE BookingID = @BookingID 
-                          AND GuestID = @GuestID 
-                          AND (BookingStatus IS NULL OR (BookingStatus NOT IN ('Cancelled', 'CheckedIn', 'CheckedOut')))
+                        AND GuestID = @GuestID 
+                        AND (BookingStatus IS NULL OR (BookingStatus NOT IN ('Cancelled', 'CheckedIn', 'CheckedOut')))
                     `);
 
                 if (updateRes.rowsAffected[0] === 0) {
@@ -386,8 +381,9 @@ class BookingModel {
             const bookingsResult = await pool.request()
                 .input('InvoiceNo', invoiceNo)
                 .query(`
-                    SELECT b.BookingID, b.RoomNo, b.RoomType, b.ArrivalDate, b.DepartureDate, b.BookingStatus, b.CancelReason
+                    SELECT b.BookingID, b.RoomNo, r.RoomType, b.ArrivalDate, b.DepartureDate, b.BookingStatus, NULL AS CancelReason
                     FROM Booking b
+                    LEFT JOIN Room r ON b.RoomNo = r.RoomNo
                     WHERE b.InvoiceNo = @InvoiceNo
                 `);
             const bookings = bookingsResult.recordset;

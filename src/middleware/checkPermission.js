@@ -15,10 +15,11 @@ function checkPermission(requiredPermission) {
                 .input('EmployeeID', employeeId)
                 .input('PermissionKey', requiredPermission)
                 .query(`
-                    SELECT 1
+                    SELECT r.RoleTitle
                     FROM Employee e
                     JOIN RolePermission rp ON e.RoleID = rp.RoleID
                     JOIN Permission p ON rp.PermissionID = p.PermissionID
+                    JOIN Role r ON e.RoleID = r.RoleID
                     WHERE e.EmployeeID = @EmployeeID AND p.PermissionKey = @PermissionKey
                 `);
 
@@ -26,6 +27,7 @@ function checkPermission(requiredPermission) {
                 return res.status(403).json({ message: 'Forbidden: insufficient permissions' });
             }
 
+            req.employeeRole = result.recordset[0].RoleTitle;
             next();
         } catch (error) {
             console.error("Permission check failed:", error);
