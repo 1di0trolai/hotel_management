@@ -43,6 +43,22 @@ exports.updateRoomStatus = async (req, res) => {
     try {
         const { status } = req.body;
         if (!status) return res.status(400).json({ message: 'Status is required' });
+
+        // Role-specific status restrictions. Housekeeper and Maintenance can only
+        // toggle the one status pair relevant to their job; other manage_rooms
+        // roles (Receptionist/Manager/Admin) are unrestricted.
+        const allowedStatusesByRole = {
+            Housekeeper: ['Available', 'Cleaning'],
+            Maintenance: ['Available', 'Maintenance']
+        };
+        const allowed = allowedStatusesByRole[req.employeeRole];
+
+        if (allowed && !allowed.includes(status)) {
+            return res.status(403).json({
+                message: `${req.employeeRole} cannot set room status to '${status}'.`
+            });
+        }
+
         const success = await RoomModel.updateRoomStatus(req.params.roomNo, status);
         if (success) {
             res.status(200).json({ message: 'Room status updated successfully' });

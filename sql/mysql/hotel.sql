@@ -194,7 +194,8 @@ WHERE r.RoleTitle = 'Accountant'
 AND p.PermissionKey IN (
 'view_bills',
 'manage_bills',
-'view_bookings'
+'view_bookings',
+'view_statistics'
 )
 AND NOT EXISTS (
 SELECT 1
