@@ -10,17 +10,26 @@ class BookingModel {
                     g.FirstName + ' ' + g.LastName AS GuestName, 
                     g.Email AS GuestEmail,
                     g.PhoneNo AS GuestPhone,
-                    STRING_AGG(r.RoomType + ' (' + b.RoomNo + ')', ', ') AS RoomType, 
+                    STRING_AGG(COALESCE(r.RoomType, b.RoomType) + COALESCE(' (' + b.RoomNo + ')', ' (Unassigned)'), ', ') AS RoomType, 
                     b.ArrivalDate, 
                     b.DepartureDate, 
                     b.BookingStatus,
                     MAX(b.NumAdults) AS NumAdults, 
                     MAX(b.NumChildren) AS NumChildren, 
-                    MAX(b.SpecialReq) AS SpecialReq
+                    MAX(b.SpecialReq) AS SpecialReq,
+                    MAX(CAST(b.CancelReason AS VARCHAR(MAX))) AS CancelReason
                 FROM Booking b
                 INNER JOIN Guest g ON b.GuestID = g.GuestID
-                INNER JOIN Room r ON b.RoomNo = r.RoomNo
-                GROUP BY b.InvoiceNo, g.FirstName, g.LastName, g.Email, g.PhoneNo, b.ArrivalDate, b.DepartureDate, b.BookingStatus
+                LEFT JOIN Room r ON b.RoomNo = r.RoomNo
+                GROUP BY 
+                    b.InvoiceNo, 
+                    g.FirstName, 
+                    g.LastName,
+                    g.Email,
+                    g.PhoneNo,
+                    b.ArrivalDate, 
+                    b.DepartureDate, 
+                    b.BookingStatus
                 ORDER BY b.InvoiceNo DESC
             `);
             return result.recordset;
@@ -75,39 +84,53 @@ class BookingModel {
         }
     }
 
-    static async updateBookingStatus(invoiceNo, status) {
+    static async updateBookingStatus(invoiceNo, status, cancelReason = null) {
         try {
             const pool = await poolPromise;
-            
-            // Start a transaction since we are updating both Booking and Room tables
             const transaction = pool.transaction();
             await transaction.begin();
             
             try {
-                // Update Bookings by InvoiceNo
-                const result = await transaction.request()
+                let updateQuery = `
+                    UPDATE Booking
+                    SET BookingStatus = @Status
+                `;
+                if (status === 'Cancelled' && cancelReason) {
+                    updateQuery += `, CancelReason = @CancelReason `;
+                }
+                updateQuery += ` WHERE InvoiceNo = @InvoiceNo `;
+
+                const request = transaction.request()
                     .input('InvoiceNo', invoiceNo)
-                    .input('Status', status)
-                    .query(`
-                        UPDATE Booking
-                        SET BookingStatus = @Status
-                        WHERE InvoiceNo = @InvoiceNo
-                    `);
-                    
-                // Auto-update Room Status based on Check-in/Check-out/Cancel
-                let roomStatus = null;
-                if (status === 'CheckedIn') roomStatus = 'Occupied';
-                else if (status === 'CheckedOut') roomStatus = 'Cleaning';
-                else if (status === 'Cancelled') roomStatus = 'Available';
+                    .input('Status', status);
                 
-                if (roomStatus) {
+                if (status === 'Cancelled' && cancelReason) {
+                    request.input('CancelReason', cancelReason);
+                }
+
+                const result = await request.query(updateQuery);
+                
+                if (status === 'CheckedOut') {
                     await transaction.request()
                         .input('InvoiceNo', invoiceNo)
-                        .input('RoomStatus', roomStatus)
                         .query(`
-                            UPDATE Room 
-                            SET RoomStatus = @RoomStatus 
-                            WHERE RoomNo IN (SELECT RoomNo FROM Booking WHERE InvoiceNo = @InvoiceNo)
+                            UPDATE Room
+                            SET RoomStatus = 'Cleaning'
+                            WHERE RoomNo IN (
+                                SELECT RoomNo FROM Booking
+                                WHERE InvoiceNo = @InvoiceNo AND RoomNo IS NOT NULL
+                            )
+                        `);
+                } else if (status === 'Cancelled') {
+                    await transaction.request()
+                        .input('InvoiceNo', invoiceNo)
+                        .query(`
+                            UPDATE Room
+                            SET RoomStatus = 'Available'
+                            WHERE RoomNo IN (
+                                SELECT RoomNo FROM Booking
+                                WHERE InvoiceNo = @InvoiceNo AND RoomNo IS NOT NULL
+                            )
                         `);
                 }
                 
@@ -125,33 +148,35 @@ class BookingModel {
     static async getBookingStatistics() {
         try {
             const pool = await poolPromise;
-            // Get stats for current month as an example.
+            // Get stats for current month based on BookingDate
             const result = await pool.request().query(`
                 SELECT 
                     COUNT(DISTINCT InvoiceNo) as TotalBookings,
-                    SUM(CASE WHEN BookingStatus = 'Cancelled' THEN 1 ELSE 0 END) as Cancelled,
-                    SUM(CASE WHEN BookingStatus = 'CheckedIn' THEN 1 ELSE 0 END) as CheckedIn,
-                    SUM(CASE WHEN BookingStatus = 'CheckedOut' THEN 1 ELSE 0 END) as CheckedOut,
-                    (SELECT ISNULL(SUM(TotalAmount), 0) FROM Bill 
-                     WHERE MONTH(PaymentDate) = MONTH(GETDATE()) 
-                       AND YEAR(PaymentDate) = YEAR(GETDATE()) 
-                       AND PaymentStatus = 'Paid') as TotalRevenue
+                    COUNT(DISTINCT CASE WHEN BookingStatus = 'Cancelled' THEN InvoiceNo END) as Cancelled,
+                    COUNT(DISTINCT CASE WHEN BookingStatus = 'CheckedOut' THEN InvoiceNo END) as CheckedOut
                 FROM Booking
                 WHERE MONTH(BookingDate) = MONTH(GETDATE()) 
                   AND YEAR(BookingDate) = YEAR(GETDATE())
             `);
+            
+            const revenueResult = await pool.request().query(`
+                SELECT SUM(TotalAmount) as TotalRevenue
+                FROM Bill
+                WHERE PaymentStatus = 'Paid'
+            `);
+
             const row = result.recordset[0];
             const total = row.TotalBookings || 0;
             const cancelled = row.Cancelled || 0;
+            const checkedOut = row.CheckedOut || 0;
             const rate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
             
             return {
                 TotalBookings: total,
                 Cancelled: cancelled,
-                CheckedIn: row.CheckedIn || 0,
-                CheckedOut: row.CheckedOut || 0,
+                CheckedOut: checkedOut,
                 CancellationRate: rate,
-                TotalRevenue: row.TotalRevenue || 0
+                TotalRevenue: revenueResult.recordset[0].TotalRevenue || 0
             };
         } catch (error) {
             throw error;
@@ -177,33 +202,54 @@ class BookingModel {
 
                 // 2. Iterate and create bookings for each room requested
                 for (let part of comboParts) {
+                    const countQuery = await transaction.request()
+                        .input('RoomType', part.type)
+                        .input('ArrivalDate', arrivalDate)
+                        .input('DepartureDate', departureDate)
+                        .query(`
+                            SELECT COUNT(*) as AvailableCount, MAX(HotelCode) as HotelCode 
+                            FROM Room 
+                            WHERE RoomType = @RoomType
+                            AND RoomNo NOT IN (
+                                SELECT RoomNo FROM Booking 
+                                WHERE RoomNo IS NOT NULL
+                                  AND ArrivalDate < @DepartureDate AND DepartureDate > @ArrivalDate
+                                  AND BookingStatus != 'Cancelled'
+                            )
+                        `);
+                    
+                    const availableCount = countQuery.recordset[0].AvailableCount;
+                    if (availableCount < part.count) {
+                        // We also need to subtract unassigned rooms of this type!
+                        // Actually, a simpler way is to just let them book if there's inventory.
+                        throw new Error(`Not enough ${part.type} rooms available.`);
+                    }
+                    
+                    const hotelCode = countQuery.recordset[0].HotelCode || 1;
+
+                    // Additionally, count how many UNASSIGNED bookings exist for this room type during these dates
+                    const unassignedQuery = await transaction.request()
+                        .input('RoomType', part.type)
+                        .input('ArrivalDate', arrivalDate)
+                        .input('DepartureDate', departureDate)
+                        .query(`
+                            SELECT COUNT(*) as UnassignedCount
+                            FROM Booking
+                            WHERE RoomNo IS NULL AND RoomType = @RoomType
+                              AND ArrivalDate < @DepartureDate AND DepartureDate > @ArrivalDate
+                              AND BookingStatus != 'Cancelled'
+                        `);
+                    
+                    const unassignedCount = unassignedQuery.recordset[0].UnassignedCount;
+                    if (availableCount - unassignedCount < part.count) {
+                        throw new Error(`Not enough ${part.type} rooms available (some are pending assignment).`);
+                    }
+
                     for (let i = 0; i < part.count; i++) {
-                        const roomQuery = await transaction.request()
-                            .input('RoomType', part.type)
-                            .input('ArrivalDate', arrivalDate)
-                            .input('DepartureDate', departureDate)
-                            .query(`
-                                SELECT TOP 1 RoomNo, HotelCode 
-                                FROM Room 
-                                WHERE RoomType = @RoomType
-                                AND RoomNo NOT IN (
-                                    SELECT RoomNo FROM Booking 
-                                    WHERE ArrivalDate < @DepartureDate AND DepartureDate > @ArrivalDate
-                                      AND BookingStatus != 'Cancelled'
-                                )
-                            `);
-
-                        if (roomQuery.recordset.length === 0) {
-                            throw new Error(`Not enough ${part.type} rooms available.`);
-                        }
-
-                        const roomNo = roomQuery.recordset[0].RoomNo;
-                        const hotelCode = roomQuery.recordset[0].HotelCode;
-
                         await transaction.request()
                             .input('HotelCode', hotelCode)
                             .input('GuestID', guestID)
-                            .input('RoomNo', roomNo)
+                            .input('RoomType', part.type)
                             .input('InvoiceNo', invoiceNo)
                             .input('ArrivalDate', arrivalDate)
                             .input('DepartureDate', departureDate)
@@ -211,8 +257,8 @@ class BookingModel {
                             .input('NumChildren', numChildren)
                             .input('SpecialReq', specialReq || null)
                             .query(`
-                                INSERT INTO Booking (HotelCode, GuestID, RoomNo, InvoiceNo, BookingDate, BookingTime, ArrivalDate, DepartureDate, NumAdults, NumChildren, SpecialReq, BookingStatus)
-                                VALUES (@HotelCode, @GuestID, @RoomNo, @InvoiceNo, CAST(GETDATE() AS DATE), CAST(GETDATE() AS TIME), @ArrivalDate, @DepartureDate, @NumAdults, @NumChildren, @SpecialReq, 'Pending')
+                                INSERT INTO Booking (HotelCode, GuestID, RoomNo, RoomType, InvoiceNo, BookingDate, BookingTime, ArrivalDate, DepartureDate, NumAdults, NumChildren, SpecialReq, BookingStatus)
+                                VALUES (@HotelCode, @GuestID, NULL, @RoomType, @InvoiceNo, CAST(GETDATE() AS DATE), CAST(GETDATE() AS TIME), @ArrivalDate, @DepartureDate, @NumAdults, @NumChildren, @SpecialReq, 'Pending')
                             `);
                     }
                 }
@@ -224,9 +270,8 @@ class BookingModel {
                         DECLARE @TotalAmount DECIMAL(18,2);
                         SELECT @TotalAmount = SUM(rt.RoomPrice * CASE WHEN DATEDIFF(day, b.ArrivalDate, b.DepartureDate) = 0 THEN 1 ELSE DATEDIFF(day, b.ArrivalDate, b.DepartureDate) END)
                         FROM Booking b
-                        INNER JOIN Room r ON b.RoomNo = r.RoomNo
-                        INNER JOIN RoomType rt ON r.RoomType = rt.RoomType
-                        WHERE b.InvoiceNo = @InvoiceNo;
+                        INNER JOIN RoomType rt ON b.RoomType = rt.RoomType
+                        WHERE b.InvoiceNo = @InvoiceNo AND b.BookingStatus != 'Cancelled';
 
                         IF @TotalAmount IS NULL SET @TotalAmount = 0;
 
@@ -252,12 +297,12 @@ class BookingModel {
             const result = await pool.request()
                 .input('GuestID', guestId)
                 .query(`
-                    SELECT b.BookingID, b.RoomNo, r.RoomType, b.ArrivalDate, b.DepartureDate, b.BookingStatus, b.BookingDate, b.InvoiceNo, bill.PaymentStatus, bill.TotalAmount
+                    SELECT b.BookingID, b.RoomNo, COALESCE(r.RoomType, b.RoomType) AS RoomType, b.ArrivalDate, b.DepartureDate, b.BookingStatus, b.BookingDate, b.InvoiceNo, bill.PaymentStatus, bill.TotalAmount
                     FROM Booking b
-                    INNER JOIN Room r ON b.RoomNo = r.RoomNo
+                    LEFT JOIN Room r ON b.RoomNo = r.RoomNo
                     LEFT JOIN Bill bill ON b.InvoiceNo = bill.InvoiceNo
                     WHERE b.GuestID = @GuestID
-                    ORDER BY b.ArrivalDate DESC, b.BookingID DESC
+                    ORDER BY b.InvoiceNo DESC, b.BookingID DESC
                 `);
             return result.recordset;
         } catch (error) {
@@ -265,20 +310,197 @@ class BookingModel {
         }
     }
 
-    static async cancelBooking(bookingId, guestId) {
+    static async cancelBooking(bookingId, guestId, cancelReason = null) {
         try {
             const pool = await poolPromise;
-            const result = await pool.request()
-                .input('BookingID', bookingId)
-                .input('GuestID', guestId)
+            const transaction = pool.transaction();
+            await transaction.begin();
+
+            try {
+                // Update Booking status
+                const updateRes = await transaction.request()
+                    .input('BookingID', bookingId)
+                    .input('GuestID', guestId)
+                    .input('CancelReason', cancelReason)
+                    .query(`
+                        UPDATE Booking
+                        SET BookingStatus = 'Cancelled', CancelReason = @CancelReason
+                        WHERE BookingID = @BookingID 
+                          AND GuestID = @GuestID 
+                          AND (BookingStatus IS NULL OR (BookingStatus NOT IN ('Cancelled', 'CheckedIn', 'CheckedOut')))
+                    `);
+
+                if (updateRes.rowsAffected[0] === 0) {
+                    await transaction.rollback();
+                    return false;
+                }
+
+                // Get InvoiceNo
+                const invoiceRes = await transaction.request()
+                    .input('BookingID', bookingId)
+                    .query(`SELECT InvoiceNo FROM Booking WHERE BookingID = @BookingID`);
+                const invoiceNo = invoiceRes.recordset[0].InvoiceNo;
+
+                // Recalculate Bill
+                await transaction.request()
+                    .input('InvoiceNo', invoiceNo)
+                    .query(`
+                        DECLARE @TotalAmount DECIMAL(18,2);
+                        SELECT @TotalAmount = SUM(rt.RoomPrice * CASE WHEN DATEDIFF(day, b.ArrivalDate, b.DepartureDate) = 0 THEN 1 ELSE DATEDIFF(day, b.ArrivalDate, b.DepartureDate) END)
+                        FROM Booking b
+                        INNER JOIN RoomType rt ON b.RoomType = rt.RoomType
+                        WHERE b.InvoiceNo = @InvoiceNo AND b.BookingStatus != 'Cancelled';
+
+                        IF @TotalAmount IS NULL SET @TotalAmount = 0;
+
+                        UPDATE Bill 
+                        SET TotalAmount = @TotalAmount,
+                            PaymentStatus = CASE WHEN @TotalAmount = 0 THEN 'Cancelled' ELSE PaymentStatus END
+                        WHERE InvoiceNo = @InvoiceNo;
+                    `);
+
+                // Release Room
+                await transaction.request()
+                    .input('BookingID', bookingId)
+                    .query(`
+                        UPDATE Room
+                        SET RoomStatus = 'Available'
+                        WHERE RoomNo = (SELECT RoomNo FROM Booking WHERE BookingID = @BookingID)
+                    `);
+
+                await transaction.commit();
+                return true;
+            } catch (err) {
+                await transaction.rollback();
+                throw err;
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getBookingDetailsByInvoice(invoiceNo) {
+        try {
+            const pool = await poolPromise;
+            // Get all bookings in this invoice
+            const bookingsResult = await pool.request()
+                .input('InvoiceNo', invoiceNo)
                 .query(`
-                    UPDATE Booking
-                    SET BookingStatus = 'Cancelled'
-                    WHERE BookingID = @BookingID 
-                      AND GuestID = @GuestID 
-                      AND (BookingStatus IS NULL OR (BookingStatus NOT IN ('Cancelled', 'CheckedIn', 'CheckedOut')))
+                    SELECT b.BookingID, b.RoomNo, b.RoomType, b.ArrivalDate, b.DepartureDate, b.BookingStatus, b.CancelReason
+                    FROM Booking b
+                    WHERE b.InvoiceNo = @InvoiceNo
                 `);
-            return result.rowsAffected[0] > 0;
+            const bookings = bookingsResult.recordset;
+
+            if (bookings.length === 0) return { bookings: [], availableRooms: {} };
+
+            // Find available rooms for each distinct RoomType + date range combination
+            // For simplicity, we just fetch available rooms for the dates of the first booking (usually they are all the same)
+            const arrivalDate = bookings[0].ArrivalDate;
+            const departureDate = bookings[0].DepartureDate;
+
+            const availableRoomsQuery = await pool.request()
+                .input('ArrivalDate', arrivalDate)
+                .input('DepartureDate', departureDate)
+                .query(`
+                    SELECT RoomNo, RoomType
+                    FROM Room
+                    WHERE (RoomStatus = 'Available' OR RoomStatus IS NULL)
+                      AND RoomNo NOT IN (
+                          SELECT RoomNo FROM Booking 
+                          WHERE RoomNo IS NOT NULL
+                            AND ArrivalDate < @DepartureDate AND DepartureDate > @ArrivalDate
+                            AND BookingStatus != 'Cancelled'
+                      )
+                `);
+
+            const availableRooms = {};
+            availableRoomsQuery.recordset.forEach(r => {
+                if (!availableRooms[r.RoomType]) availableRooms[r.RoomType] = [];
+                availableRooms[r.RoomType].push(r.RoomNo);
+            });
+
+            return {
+                bookings,
+                availableRooms
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async checkInBooking(invoiceNo, assignments) {
+        try {
+            const pool = await poolPromise;
+            const transaction = pool.transaction();
+            await transaction.begin();
+
+            try {
+                // assignments is an array: [{ bookingId: 123, roomNo: '101' }, ...]
+                for (let assignment of assignments) {
+                    const roomTypeRes = await transaction.request()
+                        .input('RoomNo', assignment.roomNo)
+                        .query(`SELECT RoomType FROM Room WHERE RoomNo = @RoomNo`);
+                    
+                    const newRoomType = roomTypeRes.recordset[0] ? roomTypeRes.recordset[0].RoomType : null;
+
+                    const updateQuery = newRoomType 
+                        ? `UPDATE Booking SET RoomNo = @RoomNo, RoomType = @RoomType WHERE BookingID = @BookingID`
+                        : `UPDATE Booking SET RoomNo = @RoomNo WHERE BookingID = @BookingID`;
+
+                    const req = transaction.request()
+                        .input('BookingID', assignment.bookingId)
+                        .input('RoomNo', assignment.roomNo);
+
+                    if (newRoomType) req.input('RoomType', newRoomType);
+
+                    await req.query(updateQuery);
+                }
+                
+                // Update Booking Status
+                await transaction.request()
+                    .input('InvoiceNo', invoiceNo)
+                    .query(`
+                        UPDATE Booking
+                        SET BookingStatus = 'CheckedIn'
+                        WHERE InvoiceNo = @InvoiceNo
+                    `);
+
+                // Update Room Status
+                await transaction.request()
+                    .input('InvoiceNo', invoiceNo)
+                    .query(`
+                        UPDATE Room
+                        SET RoomStatus = 'Occupied'
+                        WHERE RoomNo IN (
+                            SELECT RoomNo FROM Booking
+                            WHERE InvoiceNo = @InvoiceNo AND RoomNo IS NOT NULL
+                        )
+                    `);
+
+                // Recalculate Bill TotalAmount for room type changes
+                await transaction.request()
+                    .input('InvoiceNo', invoiceNo)
+                    .query(`
+                        DECLARE @TotalAmount DECIMAL(18,2);
+                        SELECT @TotalAmount = SUM(rt.RoomPrice * CASE WHEN DATEDIFF(day, b.ArrivalDate, b.DepartureDate) = 0 THEN 1 ELSE DATEDIFF(day, b.ArrivalDate, b.DepartureDate) END)
+                        FROM Booking b
+                        INNER JOIN RoomType rt ON b.RoomType = rt.RoomType
+                        WHERE b.InvoiceNo = @InvoiceNo AND b.BookingStatus != 'Cancelled';
+
+                        IF @TotalAmount IS NULL SET @TotalAmount = 0;
+
+                        UPDATE Bill 
+                        SET TotalAmount = @TotalAmount
+                        WHERE InvoiceNo = @InvoiceNo;
+                    `);
+                
+                await transaction.commit();
+                return true;
+            } catch (error) {
+                await transaction.rollback();
+                throw error;
+            }
         } catch (error) {
             throw error;
         }

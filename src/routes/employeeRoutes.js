@@ -1,18 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const employeeController = require('../controllers/employeeController');
-const checkPermission = require('../middleware/checkPermission');
 
-// GET /api/employees/roles - Get all available roles (must be before /:id)
-router.get('/roles', checkPermission('manage_employees'), employeeController.getAllRoles);
+// GET /api/employees
+router.get('/', employeeController.getAllEmployees);
 
-// GET /api/employees - Get all employees
-router.get('/', checkPermission('manage_employees'), employeeController.getAllEmployees);
+// GET /api/employees/roles
+router.get('/roles', employeeController.getRoles);
 
-// POST /api/employees - Create a new employee
-router.post('/', checkPermission('manage_employees'), employeeController.createEmployee);
+// POST /api/employees
+router.post('/', employeeController.addEmployee);
 
-// DELETE /api/employees/:id - Delete an employee
-router.delete('/:id', checkPermission('manage_employees'), employeeController.deleteEmployee);
+// DELETE /api/employees/:id
+router.delete('/:id', employeeController.deleteEmployee);
 
 module.exports = router;

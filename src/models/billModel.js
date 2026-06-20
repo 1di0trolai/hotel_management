@@ -20,7 +20,38 @@ class BillModel {
                     INNER JOIN Booking bk ON b.InvoiceNo = bk.InvoiceNo
                     LEFT JOIN Review r ON b.InvoiceNo = r.InvoiceNo
                     WHERE b.GuestID = @GuestID
+                      AND b.PaymentStatus != 'Cancelled'
+                      AND b.TotalAmount > 0
+                      AND (b.PaymentStatus = 'Paid' OR EXISTS (SELECT 1 FROM Booking WHERE Booking.InvoiceNo = b.InvoiceNo AND Booking.BookingStatus = 'CheckedOut'))
                     GROUP BY b.InvoiceNo, b.TotalAmount, b.PaymentDate, b.PaymentMode, b.PaymentStatus, r.Rating, r.Comment
+                    ORDER BY b.InvoiceNo DESC
+                `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getAllBills() {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .query(`
+                    SELECT 
+                        b.InvoiceNo,
+                        g.FirstName + ' ' + g.LastName AS GuestName,
+                        b.TotalAmount,
+                        b.PaymentDate,
+                        b.PaymentMode,
+                        b.PaymentStatus,
+                        STRING_AGG(bk.RoomNo, ', ') as RoomNo
+                    FROM Bill b
+                    INNER JOIN Guest g ON b.GuestID = g.GuestID
+                    LEFT JOIN Booking bk ON b.InvoiceNo = bk.InvoiceNo
+                    WHERE b.PaymentStatus != 'Cancelled'
+                       AND b.TotalAmount > 0
+                       AND (b.PaymentStatus = 'Paid' OR EXISTS (SELECT 1 FROM Booking WHERE Booking.InvoiceNo = b.InvoiceNo AND Booking.BookingStatus = 'CheckedOut'))
+                    GROUP BY b.InvoiceNo, g.FirstName, g.LastName, b.TotalAmount, b.PaymentDate, b.PaymentMode, b.PaymentStatus
                     ORDER BY b.InvoiceNo DESC
                 `);
             return result.recordset;
@@ -41,8 +72,7 @@ class BillModel {
                     
                     SELECT @TotalAmount = SUM(rt.RoomPrice * CASE WHEN DATEDIFF(day, b.ArrivalDate, b.DepartureDate) = 0 THEN 1 ELSE DATEDIFF(day, b.ArrivalDate, b.DepartureDate) END)
                     FROM Booking b
-                    INNER JOIN Room r ON b.RoomNo = r.RoomNo
-                    INNER JOIN RoomType rt ON r.RoomType = rt.RoomType
+                    INNER JOIN RoomType rt ON b.RoomType = rt.RoomType
                     WHERE b.InvoiceNo = @InvoiceNo;
 
                     IF @TotalAmount IS NULL SET @TotalAmount = 0;
@@ -61,25 +91,40 @@ class BillModel {
             throw error;
         }
     }
-    static async getAllBills() {
+
+    static async getBillDetails(invoiceNo) {
         try {
             const pool = await poolPromise;
-            const result = await pool.request().query(`
-                SELECT 
-                    b.InvoiceNo,
-                    g.FirstName + ' ' + g.LastName AS GuestName,
-                    b.TotalAmount,
-                    b.PaymentDate,
-                    b.PaymentMode,
-                    b.PaymentStatus,
-                    STRING_AGG(bk.RoomNo, ', ') as RoomNo
-                FROM Bill b
-                INNER JOIN Guest g ON b.GuestID = g.GuestID
-                LEFT JOIN Booking bk ON b.InvoiceNo = bk.InvoiceNo
-                GROUP BY b.InvoiceNo, g.FirstName, g.LastName, b.TotalAmount, b.PaymentDate, b.PaymentMode, b.PaymentStatus
-                ORDER BY b.InvoiceNo DESC
-            `);
-            return result.recordset;
+            
+            // Get Bill info
+            const billQuery = await pool.request()
+                .input('InvoiceNo', invoiceNo)
+                .query(`
+                    SELECT b.InvoiceNo, b.TotalAmount, b.PaymentStatus, b.PaymentMode, b.PaymentDate,
+                           g.FirstName + ' ' + g.LastName AS GuestName, g.PhoneNo, g.Email
+                    FROM Bill b
+                    INNER JOIN Guest g ON b.GuestID = g.GuestID
+                    WHERE b.InvoiceNo = @InvoiceNo
+                `);
+                
+            if (billQuery.recordset.length === 0) {
+                return null;
+            }
+            
+            const bill = billQuery.recordset[0];
+            
+            // Get Bookings attached to this Bill
+            const bookingsQuery = await pool.request()
+                .input('InvoiceNo', invoiceNo)
+                .query(`
+                    SELECT BookingID, RoomType, RoomNo, ArrivalDate, DepartureDate, NumAdults, NumChildren
+                    FROM Booking
+                    WHERE InvoiceNo = @InvoiceNo
+                `);
+                
+            bill.bookings = bookingsQuery.recordset;
+            
+            return bill;
         } catch (error) {
             throw error;
         }

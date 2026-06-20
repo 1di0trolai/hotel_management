@@ -55,7 +55,10 @@ async function loadBookings(guestId) {
             groups[key].push(b);
         });
 
-        Object.values(groups).forEach(group => {
+        const sortedKeys = Object.keys(groups).sort((a, b) => b - a);
+
+        sortedKeys.forEach(key => {
+            const group = groups[key];
             const b = group[0];
             const arrDate = new Date(b.ArrivalDate).toLocaleDateString('en-US');
             const depDate = new Date(b.DepartureDate).toLocaleDateString('en-US');
@@ -99,7 +102,9 @@ async function loadBookings(guestId) {
 }
 
 async function cancelGroupedBookings(bookingIdsStr) {
-    if (!confirm('Are you sure you want to cancel this entire booking order?')) return;
+    const reason = prompt('Are you sure you want to cancel this entire booking order?\nPlease enter a reason for cancellation:');
+    if (!reason) return; // User cancelled the prompt or entered empty string
+    
     const guest = JSON.parse(localStorage.getItem('guest'));
     const ids = bookingIdsStr.split(',').map(id => parseInt(id));
     let hasError = false;
@@ -108,7 +113,7 @@ async function cancelGroupedBookings(bookingIdsStr) {
             const response = await fetch(`/api/bookings/${id}/cancel`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ guestId: guest.GuestID })
+                body: JSON.stringify({ guestId: guest.GuestID, cancelReason: reason })
             });
             if (!response.ok) hasError = true;
         } catch (e) {
@@ -124,82 +129,23 @@ async function cancelGroupedBookings(bookingIdsStr) {
     loadInvoices(guest.GuestID);
 }
 
-async function payGroupedBookings(invoiceNo) {
-    if (!confirm('Do you want to pay for this order now?')) return;
-
-    const guest = JSON.parse(localStorage.getItem('guest'));
-    try {
-        const response = await fetch(`/api/bills/pay/${invoiceNo}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ guestId: guest.GuestID })
-        });
-        const result = await response.json();
-        if (response.ok) {
-            alert('Payment successful! Your order has been marked as Paid.');
-            loadBookings(guest.GuestID);
-            loadInvoices(guest.GuestID);
-        } else {
-            alert(result.message || 'Payment error.');
-        }
-    } catch (e) {
-        console.error(e);
-        alert('Server connection error.');
-    }
-}
 
 async function loadInvoices(guestId) {
     const container = document.getElementById('invoices-container');
     container.innerHTML = '<p>Loading...</p>';
     try {
-        const [bookingsRes, billsRes] = await Promise.all([
-            fetch(`/api/bookings/guest/${guestId}`),
-            fetch(`/api/bills/guest/${guestId}`)
-        ]);
+        const billsRes = await fetch(`/api/bills/guest/${guestId}`);
 
-        if (!bookingsRes.ok || !billsRes.ok) throw new Error('Network error');
+        if (!billsRes.ok) throw new Error('Network error');
 
-        const bookings = await bookingsRes.json();
         const bills = await billsRes.json();
         
         container.innerHTML = '';
         
-        const unpaidBookings = bookings.filter(b => b.PaymentStatus === 'Unpaid' && (b.BookingStatus || 'Pending') !== 'Cancelled');
-        const groups = {};
-        unpaidBookings.forEach(b => {
-            const key = b.InvoiceNo;
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(b);
-        });
-
-        const hasNoInvoices = Object.keys(groups).length === 0 && bills.length === 0;
-        if (hasNoInvoices) {
+        if (bills.length === 0) {
             container.innerHTML = '<p style="color:#aaa;">You have no invoices yet.</p>';
             return;
         }
-
-        Object.values(groups).forEach(group => {
-            const b = group[0];
-            const invoiceNo = b.InvoiceNo;
-            const arrDate = new Date(b.ArrivalDate).toLocaleDateString('en-US');
-            const depDate = new Date(b.DepartureDate).toLocaleDateString('en-US');
-            
-            const roomsList = group.map(g => `${g.RoomNo} (${g.RoomType})`).join(', ');
-
-            const card = document.createElement('div');
-            card.className = 'data-card';
-            card.innerHTML = `
-                <div>
-                    <h4>Unpaid Order ID: #${invoiceNo}</h4>
-                    <p>Rooms: ${roomsList}</p>
-                    <p>Stay period: ${arrDate} ➔ ${depDate}</p>
-                </div>
-                <div style="text-align: right;">
-                    <button class="btn btn-primary" onclick="payGroupedBookings('${invoiceNo}')">Pay Now</button>
-                </div>
-            `;
-            container.appendChild(card);
-        });
 
         bills.forEach(b => {
             const payDate = b.PaymentDate ? new Date(b.PaymentDate).toLocaleDateString('en-US') : 'N/A';
@@ -207,19 +153,24 @@ async function loadInvoices(guestId) {
             card.className = 'data-card';
             
             let actionBtn = '';
-            if (b.Rating) {
-                actionBtn = `<div style="color: gold; font-size: 1.2rem;">${'★'.repeat(b.Rating)}${'☆'.repeat(5-b.Rating)}</div>
-                             <small style="color: #888;">Reviewed</small>`;
-            } else {
-                actionBtn = `<button class="btn btn-primary" style="padding: 0.4rem 1rem;" onclick="openReviewModal(${b.InvoiceNo})">Review</button>`;
+            if (b.PaymentStatus === 'Paid') {
+                if (b.Rating) {
+                    actionBtn = `<div style="color: gold; font-size: 1.2rem;">${'★'.repeat(b.Rating)}${'☆'.repeat(5-b.Rating)}</div>
+                                 <small style="color: #888;">Reviewed</small>`;
+                } else {
+                    actionBtn = `<button class="btn btn-primary" style="padding: 0.4rem 1rem;" onclick="openReviewModal(${b.InvoiceNo})">Review</button>`;
+                }
             }
+
+            const statusColor = b.PaymentStatus === 'Paid' ? '#4CAF50' : '#f39c12';
 
             card.innerHTML = `
                 <div>
                     <h4>Invoice ID: #${b.InvoiceNo}</h4>
-                    <p>Rooms: ${b.RoomNo}</p>
+                    <p>Rooms: ${b.RoomNo || 'N/A'}</p>
                     <p>Total Amount: $${b.TotalAmount || 0}</p>
-                    <p>Status: <strong style="color: #4CAF50;">Paid</strong></p>
+                    <p>Status: <strong style="color: ${statusColor};">${b.PaymentStatus}</strong></p>
+                    <p>Payment Mode: ${b.PaymentMode || 'N/A'}</p>
                     <p>Payment Date: ${payDate}</p>
                 </div>
                 <div style="text-align: right;">

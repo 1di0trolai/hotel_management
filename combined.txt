@@ -1,0 +1,4771 @@
+===== public/profile.html =====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | Grand Palace Hotel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .profile-container {
+            display: flex;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .sidebar {
+            width: 250px;
+            background: rgba(255,255,255,0.05);
+            padding: 2rem 1rem;
+            border-radius: 10px;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar li {
+            padding: 1rem;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+            transition: 0.3s;
+        }
+        .sidebar li:hover, .sidebar li.active {
+            background: var(--primary);
+            color: #fff;
+        }
+        .content-area {
+            flex: 1;
+            background: rgba(255,255,255,0.02);
+            padding: 2rem;
+            border-radius: 10px;
+            min-height: 500px;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .data-card {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .data-card h4 { margin: 0 0 0.5rem 0; color: #fff; }
+        .data-card p { margin: 0 0 0.2rem 0; color: #aaa; font-size: 0.9rem; }
+        .status-badge {
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-Confirmed { background: #2196F3; color: white; }
+        .status-CheckedIn { background: #4CAF50; color: white; }
+        .status-CheckedOut { background: #9E9E9E; color: white; }
+        .status-Cancelled { background: #f44336; color: white; }
+        
+        .modal-body input, .modal-body textarea, .modal-body select {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #2a2c33;
+            color: white;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body style="background: #1a1c23; color: #fff;">
+    <header class="glass-header" style="background: rgba(15, 17, 21, 0.95);">
+        <div class="logo">Grand Palace</div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="/index.html">Home</a></li>
+                <li><a href="/index.html#rooms">Rooms</a></li>
+                <li><a href="/index.html#about">About</a></li>
+                <li><a href="/index.html#contact">Contact</a></li>
+                <li><a href="/login.html" class="btn btn-outline" id="nav-login-btn">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section style="padding: 120px 5% 50px; min-height: 80vh;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 2rem; color: var(--primary); text-align: center;">Your Profile</h1>
+        
+        <div class="profile-container">
+            <div class="sidebar">
+                <ul>
+                    <li class="active" onclick="switchTab('profile')">👤 Personal Info</li>
+                    <li onclick="switchTab('bookings')">🛏️ My Bookings</li>
+                    <li onclick="switchTab('invoices')">🧾 Invoices</li>
+                </ul>
+            </div>
+            
+            <div class="content-area">
+                <!-- Profile Tab -->
+                <div id="tab-profile" class="tab-content active">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; margin-bottom: 1.5rem; padding-bottom: 0.5rem;">
+                        <h2 style="color: #fff; margin: 0;">Account Information</h2>
+                        <button class="btn btn-outline" style="padding: 0.4rem 1rem;" onclick="openEditProfileModal()">Edit Profile</button>
+                    </div>
+                    <div id="profile-info-container">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Bookings Tab -->
+                <div id="tab-bookings" class="tab-content">
+                    <h2 style="color: #fff; border-bottom: 1px solid #444; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">Booking History</h2>
+                    <div id="bookings-container">
+                        Loading...
+                    </div>
+                </div>
+
+                <!-- Invoices Tab -->
+                <div id="tab-invoices" class="tab-content">
+                    <h2 style="color: #fff; border-bottom: 1px solid #444; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">Payment Invoices</h2>
+                    <div id="invoices-container">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Review Modal -->
+    <div id="review-modal" class="modal-backdrop" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: #1a1c23; padding: 2rem; border-radius: 10px; width: 400px; max-width: 90%; border: 1px solid #444; position: relative;">
+            <span class="close-modal-btn" onclick="closeReviewModal()" style="position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #fff;">&times;</span>
+            <h3 style="color: #fff; margin-bottom: 1.5rem;">Write a Review</h3>
+            <div class="modal-body">
+                <input type="hidden" id="review-invoice-id">
+                <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Satisfaction Level (Stars):</label>
+                <select id="review-rating" required>
+                    <option value="5">5 Stars - Excellent</option>
+                    <option value="4">4 Stars - Very Good</option>
+                    <option value="3">3 Stars - Acceptable</option>
+                    <option value="2">2 Stars - Poor</option>
+                    <option value="1">1 Star - Terrible</option>
+                </select>
+                <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Your Comment:</label>
+                <textarea id="review-comment" placeholder="Share your experience..." rows="4" required></textarea>
+                <button class="btn btn-primary" style="width: 100%" onclick="submitReview()">Submit Review</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="modal-backdrop" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: #1a1c23; padding: 2rem; border-radius: 10px; width: 500px; max-width: 90%; border: 1px solid #444; position: relative;">
+            <span class="close-modal-btn" onclick="closeEditProfileModal()" style="position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: #fff;">&times;</span>
+            <h3 style="color: #fff; margin-bottom: 1.5rem;">Edit Profile</h3>
+            <form id="edit-profile-form" class="modal-body">
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">First Name:</label>
+                        <input type="text" id="edit-firstname" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Last Name:</label>
+                        <input type="text" id="edit-lastname" required>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Phone Number:</label>
+                        <input type="tel" id="edit-phone">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Date of Birth:</label>
+                        <input type="date" id="edit-dob">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Gender:</label>
+                        <select id="edit-gender">
+                            <option value="">Select...</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="color: #ccc; margin-bottom: 0.5rem; display: block;">Passport / ID:</label>
+                        <input type="text" id="edit-passport">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" id="edit-profile-btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Grand Palace. All rights reserved.</p>
+    </footer>
+
+    <script src="/js/main.js"></script>
+    <script src="/js/profile.js"></script>
+</body>
+</html>
+
+===== public/index.html =====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Palace Hotel | Luxury & Comfort</title>
+    <meta name="description" content="Experience the ultimate luxury stay at the Grand Palace Hotel.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="glass-header">
+        <div class="logo">Grand Palace</div>
+        <nav>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#rooms">Rooms</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+                <li><a href="/login.html" class="btn btn-outline" id="nav-login-btn">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section id="home" class="hero-section">
+        <div class="hero-content">
+            <h1>Experience Unmatched Elegance</h1>
+            <p>Your perfect escape awaits in the heart of the city.</p>
+        </div>
+        
+        <!-- JW Marriott style Booking Bar -->
+        <div class="booking-bar">
+            <form id="search-form" class="booking-form">
+                <div class="form-group">
+                    <label>DATES (1 NIGHT)</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="date" id="search-arrival" required>
+                        <span style="color:#aaa;">→</span>
+                        <input type="date" id="search-departure" required>
+                    </div>
+                </div>
+                <div class="form-divider"></div>
+                <div class="form-group" style="position: relative;" id="guest-group">
+                    <label>ROOMS & GUESTS</label>
+                    <div id="guests-display" style="color:#fff; font-size:1rem; cursor:pointer;" onclick="toggleGuestPopover()">
+                        2 Guests
+                    </div>
+                    <div id="guests-popover" class="guests-popover" style="display:none;">
+                        <span class="close-popover" onclick="toggleGuestPopover()">×</span>
+                        <h4 style="margin-bottom: 1rem; color: #555; font-size: 0.8rem; text-transform: uppercase;">Number of guests</h4>
+                        <div class="counter-row">
+                            <div><strong>Adults</strong><br><small style="color:#888; font-size: 0.75rem;">(Max: 16 adults)</small></div>
+                            <div class="counter">
+                                <button type="button" onclick="updateCount('adults', -1)">-</button>
+                                <span id="count-adults" style="color: black;">2</span>
+                                <button type="button" onclick="updateCount('adults', 1)">+</button>
+                            </div>
+                        </div>
+                        <div class="counter-row">
+                            <div><strong>Children</strong><br><small style="color:#888; font-size: 0.75rem;">(Under 12 years)</small></div>
+                            <div class="counter">
+                                <button type="button" onclick="updateCount('children', -1)">-</button>
+                                <span id="count-children" style="color: black;">0</span>
+                                <button type="button" onclick="updateCount('children', 1)">+</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline" style="width: 100%; margin-top: 1rem; padding: 0.5rem;" onclick="toggleGuestPopover()">OK</button>
+                    </div>
+                </div>
+                <div class="form-divider"></div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-search">View Rates</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section id="rooms" class="rooms-section">
+        <div class="section-title">
+            <h2 id="room-section-title">Recommended Rooms</h2>
+            <p id="room-section-desc">Please select your dates and guests to view the best room recommendations.</p>
+        </div>
+        <div class="rooms-grid" id="rooms-container">
+            <!-- Dynamically injected -->
+        </div>
+    </section>
+
+    <!-- Room Detail Modal -->
+    <div id="room-detail-modal" class="modal-backdrop" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; overflow-y: auto;">
+        <div class="modal-content-large">
+            <span class="close-modal-btn" onclick="closeRoomModal()">&times;</span>
+            <div class="modal-grid">
+                <!-- Left: Gallery -->
+                <div class="modal-gallery">
+                    <img id="modal-main-img" class="main-img" src="" alt="Main Room Image">
+                    <div class="thumbnail-row">
+                        <div class="thumb active" onclick="changeImage(this, 1)">
+                            <img id="thumb-img-1" src="" alt="Thumbnail 1">
+                        </div>
+                        <div class="thumb" onclick="changeImage(this, 2)">
+                            <img id="thumb-img-2" src="" alt="Thumbnail 2">
+                        </div>
+                        <div class="thumb" onclick="changeImage(this, 3)">
+                            <img id="thumb-img-3" src="" alt="Thumbnail 3">
+                        </div>
+                        <div class="thumb" onclick="changeImage(this, 4)">
+                            <img id="thumb-img-4" src="" alt="Thumbnail 4">
+                        </div>
+                        <div class="thumb" onclick="changeImage(this, 5)">
+                            <img id="thumb-img-5" src="" alt="Thumbnail 5">
+                        </div>
+                        <div class="thumb" onclick="changeImage(this, 6)">
+                            <img id="thumb-img-6" src="" alt="Thumbnail 6">
+                        </div>
+                        <div class="thumb" onclick="changeImage(this, 7)">
+                            <img id="thumb-img-7" src="" alt="Thumbnail 7">
+                        </div>
+                        <div class="thumb" onclick="changeImage(this, 8)">
+                            <img id="thumb-img-8" src="" alt="Thumbnail 8">
+                        </div>
+                        <div class="thumb" onclick="changeImage(this, 9)">
+                            <img id="thumb-img-9" src="" alt="Thumbnail 9">
+                        </div>
+                        <div class="thumb" onclick="changeImage(this, 10)">
+                            <img id="thumb-img-10" src="" alt="Thumbnail 10">
+                        </div>
+                    </div>
+                </div>
+                <!-- Right: Details -->
+                <div class="modal-details">
+                    <h2 id="modal-room-title">Room...</h2>
+                    
+                    <div class="tags-row">
+                        <span class="detail-tag">🛏️ Room</span>
+                        <span class="detail-tag" id="modal-room-area">📐 27 m²</span>
+                        <span class="detail-tag">⛰️ Nice view</span>
+                        <span class="detail-tag">❄️ Air conditioning</span>
+                        <span class="detail-tag">🚿 Private bathroom</span>
+                        <span class="detail-tag">📺 Flat-screen TV</span>
+                        <span class="detail-tag">🍷 Minibar</span>
+                        <span class="detail-tag">📶 Free WiFi</span>
+                    </div>
+
+                    <p style="margin: 0.5rem 0; font-size: 0.85rem;" id="modal-room-desc">Room description...</p>
+
+                    <h4 style="font-size: 0.95rem; margin-bottom: 0.2rem;">In your private bathroom:</h4>
+                    <div class="amenities-grid">
+                        <span>✓ Free toiletries</span>
+                        <span>✓ Bath or Shower</span>
+                        <span>✓ Bidet</span>
+                        <span>✓ Slippers</span>
+                        <span>✓ Hairdryer</span>
+                        <span>✓ Toilet paper</span>
+                    </div>
+
+                    <h4 style="margin-top: 0.8rem; font-size: 0.95rem; margin-bottom: 0.2rem;">Room facilities:</h4>
+                    <div class="amenities-grid cols-2">
+                        <span>✓ Desk</span>
+                        <span>✓ TV</span>
+                        <span>✓ Carbon monoxide detector</span>
+                        <span>✓ Refrigerator</span>
+                        <span>✓ Flat-screen TV</span>
+                        <span>✓ Minibar</span>
+                        <span>✓ Wake-up service</span>
+                        <span>✓ Electric kettle</span>
+                        <span>✓ Alarm clock</span>
+                        <span>✓ Telephone</span>
+                        <span>✓ Towels</span>
+                        <span>✓ Dining area</span>
+                    </div>
+                    
+                    <p style="margin-top: 1.5rem;"><strong>Smoking:</strong> Non-smoking</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section id="about" style="padding: 100px 10%; min-height: 80vh; background: #1a1c23; color: white;">
+        <h1 style="font-size: 3.5rem; margin-bottom: 2rem; color: var(--primary); text-align: center;">About Us</h1>
+        <div style="display: flex; gap: 4rem; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+                <p style="font-size: 1.2rem; line-height: 1.8; color: #ddd; margin-bottom: 1.5rem;">
+                    Welcome to the Grand Palace Hotel - Where luxury and absolute comfort are celebrated.
+                </p>
+                <p style="font-size: 1.2rem; line-height: 1.8; color: #ddd; margin-bottom: 1.5rem;">
+                    Established in 2010, our hotel constantly strives to provide the highest class of accommodation. With over 200 exquisitely designed rooms, integrated modern technology, and perfect amenities, Grand Palace is the ideal destination for both business and leisure travelers.
+                </p>
+                <p style="font-size: 1.2rem; line-height: 1.8; color: #ddd;">
+                    Our dedicated and professional staff are always ready to serve you 24/7, ensuring that all your needs are fully met.
+                </p>
+            </div>
+            <div style="flex: 1; min-width: 300px; text-align: center;">
+                <img src="/images/deluxe.jpg" alt="About Us" style="width: 100%; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" style="padding: 100px 10%; min-height: 80vh; background: #0f1115; color: white;">
+        <h1 style="font-size: 3.5rem; margin-bottom: 3rem; color: var(--primary); text-align: center;">Contact</h1>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4rem;">
+            <div style="background: rgba(255,255,255,0.05); padding: 2rem; border-radius: 15px;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem; color: #fff;">Direct Information</h3>
+                <p style="font-size: 1.1rem; line-height: 2; color: #ccc;">📍 <strong>Address:</strong> 123 Ton Duc Thang St, District 1, HCMC</p>
+                <p style="font-size: 1.1rem; line-height: 2; color: #ccc;">📞 <strong>Phone:</strong> +84 123 456 789</p>
+                <p style="font-size: 1.1rem; line-height: 2; color: #ccc;">✉️ <strong>Email:</strong> info@grandpalace.com</p>
+            </div>
+            <div>
+                <h3 style="font-size: 1.8rem; margin-bottom: 1.5rem; color: #fff;">Send a Message</h3>
+                <form onsubmit="event.preventDefault(); alert('Message sent. We will respond as soon as possible!'); this.reset();">
+                    <div style="margin-bottom: 1.5rem;">
+                        <input type="text" placeholder="Your Name" style="width:100%; padding: 1rem; border-radius: 8px; border: 1px solid #444; background: #2a2c33; color: white; font-family: inherit; font-size: 1rem;" required>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <input type="email" placeholder="Email" style="width:100%; padding: 1rem; border-radius: 8px; border: 1px solid #444; background: #2a2c33; color: white; font-family: inherit; font-size: 1rem;" required>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <textarea placeholder="Your Message..." style="width:100%; padding: 1rem; border-radius: 8px; border: 1px solid #444; background: #2a2c33; color: white; min-height: 180px; font-family: inherit; font-size: 1rem;" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem;">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <section id="reviews" class="reviews-section" style="padding: 5rem 10%; background: #1a1c23;">
+        <div class="section-title">
+            <h2 style="color: #fff; text-align: center; margin-bottom: 0.5rem; font-size: 2.5rem;">
+                What Our Guests Say
+                <span id="average-rating-display" style="font-size: 1.5rem; color: gold; margin-left: 10px;"></span>
+            </h2>
+            <p style="color: #aaa; text-align: center; margin-bottom: 3rem;">Real experiences from guests who have stayed at the Grand Palace.</p>
+        </div>
+        <div class="reviews-grid" id="reviews-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+            <!-- Injected by JS -->
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Grand Palace. All rights reserved.</p>
+    </footer>
+
+    <script src="/js/main.js"></script>
+</body>
+</html>
+
+===== public/js/profile.js =====
+document.addEventListener('DOMContentLoaded', () => {
+    const guest = JSON.parse(localStorage.getItem('guest'));
+    if (!guest) {
+        alert('Please login to view profile.');
+        window.location.href = '/login.html';
+        return;
+    }
+
+    renderProfileInfo(guest);
+    loadBookings(guest.GuestID);
+    loadInvoices(guest.GuestID);
+});
+
+function switchTab(tabId) {
+    // Update active nav
+    document.querySelectorAll('.sidebar li').forEach(li => li.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+
+    // Update active content
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+}
+
+function renderProfileInfo(guest) {
+    const container = document.getElementById('profile-info-container');
+    container.innerHTML = `
+        <div style="font-size: 1.1rem; line-height: 2;">
+            <p><strong style="color:var(--primary); width: 120px; display:inline-block;">Full Name:</strong> ${guest.FirstName} ${guest.LastName}</p>
+            <p><strong style="color:var(--primary); width: 120px; display:inline-block;">Email:</strong> ${guest.Email}</p>
+            <p><strong style="color:var(--primary); width: 120px; display:inline-block;">Phone:</strong> ${guest.PhoneNo || 'N/A'}</p>
+            <p><strong style="color:var(--primary); width: 120px; display:inline-block;">DOB:</strong> ${guest.DOB ? new Date(guest.DOB).toLocaleDateString() : 'N/A'}</p>
+            <p><strong style="color:var(--primary); width: 120px; display:inline-block;">Gender:</strong> ${guest.Gender || 'N/A'}</p>
+            <p><strong style="color:var(--primary); width: 120px; display:inline-block;">Passport/ID:</strong> ${guest.PassportNo || 'N/A'}</p>
+        </div>
+    `;
+}
+
+async function loadBookings(guestId) {
+    const container = document.getElementById('bookings-container');
+    try {
+        const response = await fetch(`/api/bookings/guest/${guestId}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const bookings = await response.json();
+        
+        container.innerHTML = '';
+        if (bookings.length === 0) {
+            container.innerHTML = '<p style="color:#aaa;">You have no bookings yet.</p>';
+            return;
+        }
+
+        const groups = {};
+        bookings.forEach(b => {
+            const key = b.InvoiceNo; // Now grouping by InvoiceNo
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(b);
+        });
+
+        Object.values(groups).forEach(group => {
+            const b = group[0];
+            const arrDate = new Date(b.ArrivalDate).toLocaleDateString('en-US');
+            const depDate = new Date(b.DepartureDate).toLocaleDateString('en-US');
+            const bookDate = new Date(b.BookingDate).toLocaleDateString('en-US');
+            
+            const invoiceNo = b.InvoiceNo;
+            const roomsList = group.map(g => `${g.RoomNo} (${g.RoomType})`).join('<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
+
+            // Fix the null status bug by falling back to Pending
+            const displayStatus = b.BookingStatus || 'Pending';
+            const statusClass = `status-${displayStatus}`;
+
+            const card = document.createElement('div');
+            card.className = 'data-card';
+            
+            let actionBtns = '';
+            // Only allow cancel if all are Confirmed or Pending (or null meaning Pending)
+            const canCancel = group.some(g => (g.BookingStatus || 'Pending') !== 'Cancelled' && g.BookingStatus !== 'CheckedIn' && g.BookingStatus !== 'CheckedOut');
+            if (canCancel) {
+                const idsParam = group.map(g => g.BookingID).join(',');
+                actionBtns += `<button class="btn btn-outline" style="border-color: #f44336; color: #f44336; padding: 0.4rem 1rem;" onclick="cancelGroupedBookings('${idsParam}')">Cancel Order</button>`;
+            }
+
+            card.innerHTML = `
+                <div>
+                    <h4>Order ID: #${invoiceNo}</h4>
+                    <p>Rooms: <br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${roomsList}</p>
+                    <p>Stay period: ${arrDate} ➔ ${depDate}</p>
+                    <p>Booking Date: ${bookDate}</p>
+                </div>
+                <div style="text-align: right;">
+                    <div class="status-badge ${statusClass}" style="margin-bottom: 1rem; display: inline-block;">${displayStatus}</div><br>
+                    ${actionBtns}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    } catch (e) {
+        container.innerHTML = '<p style="color:red;">Error loading bookings.</p>';
+    }
+}
+
+async function cancelGroupedBookings(bookingIdsStr) {
+    if (!confirm('Are you sure you want to cancel this entire booking order?')) return;
+    const guest = JSON.parse(localStorage.getItem('guest'));
+    const ids = bookingIdsStr.split(',').map(id => parseInt(id));
+    let hasError = false;
+    for (let id of ids) {
+        try {
+            const response = await fetch(`/api/bookings/${id}/cancel`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ guestId: guest.GuestID })
+            });
+            if (!response.ok) hasError = true;
+        } catch (e) {
+            hasError = true;
+        }
+    }
+    if (hasError) {
+        alert('Some bookings could not be cancelled. Please contact support.');
+    } else {
+        alert('Booking order cancelled successfully!');
+    }
+    loadBookings(guest.GuestID);
+    loadInvoices(guest.GuestID);
+}
+
+async function payGroupedBookings(invoiceNo) {
+    if (!confirm('Do you want to pay for this order now?')) return;
+
+    const guest = JSON.parse(localStorage.getItem('guest'));
+    try {
+        const response = await fetch(`/api/bills/pay/${invoiceNo}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ guestId: guest.GuestID })
+        });
+        const result = await response.json();
+        if (response.ok) {
+            alert('Payment successful! Your order has been marked as Paid.');
+            loadBookings(guest.GuestID);
+            loadInvoices(guest.GuestID);
+        } else {
+            alert(result.message || 'Payment error.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Server connection error.');
+    }
+}
+
+async function loadInvoices(guestId) {
+    const container = document.getElementById('invoices-container');
+    container.innerHTML = '<p>Loading...</p>';
+    try {
+        const [bookingsRes, billsRes] = await Promise.all([
+            fetch(`/api/bookings/guest/${guestId}`),
+            fetch(`/api/bills/guest/${guestId}`)
+        ]);
+
+        if (!bookingsRes.ok || !billsRes.ok) throw new Error('Network error');
+
+        const bookings = await bookingsRes.json();
+        const bills = await billsRes.json();
+        
+        container.innerHTML = '';
+        
+        const unpaidBookings = bookings.filter(b => b.PaymentStatus === 'Unpaid' && (b.BookingStatus || 'Pending') !== 'Cancelled');
+        const groups = {};
+        unpaidBookings.forEach(b => {
+            const key = b.InvoiceNo;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(b);
+        });
+
+        const hasNoInvoices = Object.keys(groups).length === 0 && bills.length === 0;
+        if (hasNoInvoices) {
+            container.innerHTML = '<p style="color:#aaa;">You have no invoices yet.</p>';
+            return;
+        }
+
+        Object.values(groups).forEach(group => {
+            const b = group[0];
+            const invoiceNo = b.InvoiceNo;
+            const arrDate = new Date(b.ArrivalDate).toLocaleDateString('en-US');
+            const depDate = new Date(b.DepartureDate).toLocaleDateString('en-US');
+            
+            const roomsList = group.map(g => `${g.RoomNo} (${g.RoomType})`).join(', ');
+
+            const card = document.createElement('div');
+            card.className = 'data-card';
+            card.innerHTML = `
+                <div>
+                    <h4>Unpaid Order ID: #${invoiceNo}</h4>
+                    <p>Rooms: ${roomsList}</p>
+                    <p>Stay period: ${arrDate} ➔ ${depDate}</p>
+                </div>
+                <div style="text-align: right;">
+                    <button class="btn btn-primary" onclick="payGroupedBookings('${invoiceNo}')">Pay Now</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        bills.forEach(b => {
+            const payDate = b.PaymentDate ? new Date(b.PaymentDate).toLocaleDateString('en-US') : 'N/A';
+            const card = document.createElement('div');
+            card.className = 'data-card';
+            
+            let actionBtn = '';
+            if (b.Rating) {
+                actionBtn = `<div style="color: gold; font-size: 1.2rem;">${'★'.repeat(b.Rating)}${'☆'.repeat(5-b.Rating)}</div>
+                             <small style="color: #888;">Reviewed</small>`;
+            } else {
+                actionBtn = `<button class="btn btn-primary" style="padding: 0.4rem 1rem;" onclick="openReviewModal(${b.InvoiceNo})">Review</button>`;
+            }
+
+            card.innerHTML = `
+                <div>
+                    <h4>Invoice ID: #${b.InvoiceNo}</h4>
+                    <p>Rooms: ${b.RoomNo}</p>
+                    <p>Total Amount: $${b.TotalAmount || 0}</p>
+                    <p>Status: <strong style="color: #4CAF50;">Paid</strong></p>
+                    <p>Payment Date: ${payDate}</p>
+                </div>
+                <div style="text-align: right;">
+                    ${actionBtn}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+    } catch (e) {
+        container.innerHTML = '<p style="color:red;">Error loading invoices.</p>';
+    }
+}
+
+function openReviewModal(invoiceNo) {
+    document.getElementById('review-invoice-id').value = invoiceNo;
+    document.getElementById('review-rating').value = "5";
+    document.getElementById('review-comment').value = "";
+    document.getElementById('review-modal').style.display = 'flex';
+}
+
+function closeReviewModal() {
+    document.getElementById('review-modal').style.display = 'none';
+}
+
+async function submitReview() {
+    const guest = JSON.parse(localStorage.getItem('guest'));
+    const invoiceNo = document.getElementById('review-invoice-id').value;
+    const rating = document.getElementById('review-rating').value;
+    const comment = document.getElementById('review-comment').value;
+
+    if (!comment) {
+        alert('Please enter a comment.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                guestId: guest.GuestID,
+                invoiceNo: invoiceNo,
+                rating: parseInt(rating),
+                comment: comment
+            })
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+            alert('Thank you for your review!');
+            closeReviewModal();
+            loadInvoices(guest.GuestID); // reload to show stars instead of button
+        } else {
+            alert(result.error || 'An error occurred.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Server connection error.');
+    }
+}
+
+function openEditProfileModal() {
+    const guest = JSON.parse(localStorage.getItem('guest'));
+    if(!guest) return;
+    document.getElementById('edit-firstname').value = guest.FirstName || '';
+    document.getElementById('edit-lastname').value = guest.LastName || '';
+    document.getElementById('edit-phone').value = guest.PhoneNo || '';
+    if(guest.DOB) {
+        document.getElementById('edit-dob').value = guest.DOB.split('T')[0];
+    }
+    document.getElementById('edit-gender').value = guest.Gender || '';
+    document.getElementById('edit-passport').value = guest.PassportNo || '';
+    document.getElementById('edit-profile-modal').style.display = 'flex';
+}
+
+function closeEditProfileModal() {
+    document.getElementById('edit-profile-modal').style.display = 'none';
+}
+
+document.getElementById('edit-profile-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('edit-profile-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const guest = JSON.parse(localStorage.getItem('guest'));
+    const data = {
+        guestId: guest.GuestID,
+        FirstName: document.getElementById('edit-firstname').value,
+        LastName: document.getElementById('edit-lastname').value,
+        PhoneNo: document.getElementById('edit-phone').value,
+        DOB: document.getElementById('edit-dob').value,
+        Gender: document.getElementById('edit-gender').value,
+        PassportNo: document.getElementById('edit-passport').value
+    };
+
+    try {
+        const response = await fetch('/api/auth/profile', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if (response.ok) {
+            alert('Profile updated successfully!');
+            localStorage.setItem('guest', JSON.stringify(result.user));
+            renderProfileInfo(result.user);
+            closeEditProfileModal();
+        } else {
+            alert(result.message || 'Error updating profile.');
+        }
+    } catch(err) {
+        alert('Server connection error.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Changes';
+    }
+});
+
+===== public/js/main.js =====
+document.addEventListener('DOMContentLoaded', () => {
+    // Change header background on scroll
+    const header = document.querySelector('.glass-header');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            header.style.background = 'rgba(15, 17, 21, 0.95)';
+            header.style.boxShadow = '0 5px 20px rgba(0,0,0,0.5)';
+        } else {
+            header.style.background = 'rgba(15, 17, 21, 0.8)';
+            header.style.boxShadow = 'none';
+        }
+    });
+
+    // Handle auth state
+    const guest = JSON.parse(localStorage.getItem('guest'));
+    const loginLink = document.getElementById('nav-login-btn') || document.querySelector('a[href="/login.html"]');
+    if (guest && loginLink) {
+        loginLink.outerHTML = `
+            <div style="display:flex; align-items:center; gap: 1rem;">
+                <a href="/profile.html" style="color:#fff; font-size:0.9rem; text-decoration: none;">Hello, <b>${guest.FirstName}</b></a>
+                <button onclick="localStorage.removeItem('guest'); window.location.href='/index.html';" class="btn btn-outline" style="padding: 0.5rem 1rem;">Logout</button>
+            </div>
+        `;
+    }
+
+    if (document.getElementById('search-arrival')) {
+        initSearchBar();
+    }
+    if (document.getElementById('rooms-container')) {
+        loadDefaultRooms();
+    }
+    if (document.getElementById('reviews-container')) {
+        loadLatestReviews();
+    }
+});
+
+async function loadDefaultRooms() {
+    const container = document.getElementById('rooms-container');
+    const title = document.getElementById('room-section-title');
+    const desc = document.getElementById('room-section-desc');
+
+    title.textContent = 'Room Categories';
+    desc.textContent = 'Discover the ultimate relaxation space at our hotel.';
+
+    try {
+        const response = await fetch('/api/rooms');
+        if (!response.ok) throw new Error('Network error');
+        const rooms = await response.json();
+
+        // Group by room type since DB returns all 20 specific rooms
+        const uniqueTypes = {};
+        rooms.forEach(r => {
+            if (!uniqueTypes[r.RoomType]) {
+                uniqueTypes[r.RoomType] = r;
+            }
+        });
+
+        container.innerHTML = '';
+        Object.values(uniqueTypes).forEach(rec => {
+            const card = document.createElement('div');
+            card.className = 'room-card';
+            card.innerHTML = `
+                <div class="room-img-wrapper" style="cursor:pointer;" onclick="openRoomModal('${rec.RoomType}', '${rec.RoomDesc}', '${rec.RoomImg}', ${rec.Occupancy})">
+                    <img src="/images/${rec.RoomImg}" alt="${rec.RoomType}" onerror="this.src='/images/standard.jpg'">
+                    <div class="room-price-tag">$${rec.RoomPrice} / night</div>
+                </div>
+                <div class="room-info">
+                    <h3 style="cursor:pointer;" onclick="openRoomModal('${rec.RoomType}', '${rec.RoomDesc}', '${rec.RoomImg}', ${rec.Occupancy})">${rec.RoomType}</h3>
+                    <p style="color:var(--primary); font-weight:600; font-size:0.9rem; margin-bottom: 0.5rem;">
+                        Max capacity: ${rec.Occupancy} guests
+                    </p>
+                    <p>${rec.RoomDesc}</p>
+                    <div class="room-meta">
+                        <button class="btn btn-outline" style="width: 100%" onclick="document.getElementById('search-arrival').focus(); window.scrollTo({top: 0, behavior: 'smooth'});">
+                            Enter dates to book
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p style="color:red">Error loading default room data.</p>';
+    }
+}
+
+function initSearchBar() {
+    const arrivalInput = document.getElementById('search-arrival');
+    const departureInput = document.getElementById('search-departure');
+    const searchForm = document.getElementById('search-form');
+
+    // Default dates: Today to Tomorrow
+    const today = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(today.getDate() + 1);
+
+    arrivalInput.value = today.toISOString().split('T')[0];
+    departureInput.value = tomorrow.toISOString().split('T')[0];
+
+    // Ensure departure > arrival
+    arrivalInput.addEventListener('change', () => {
+        if (departureInput.value <= arrivalInput.value) {
+            let nextDay = new Date(arrivalInput.value);
+            nextDay.setDate(nextDay.getDate() + 1);
+            departureInput.value = nextDay.toISOString().split('T')[0];
+        }
+    });
+
+    searchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const arrivalDate = arrivalInput.value;
+        const departureDate = departureInput.value;
+        const guests = window.guestCounts.adults + window.guestCounts.children;
+        await searchRooms(arrivalDate, departureDate, guests);
+    });
+}
+
+// Popover Logic
+window.guestCounts = { adults: 2, children: 0 };
+
+function toggleGuestPopover() {
+    const popover = document.getElementById('guests-popover');
+    popover.style.display = popover.style.display === 'none' ? 'block' : 'none';
+}
+
+function updateCount(type, change) {
+    let newVal = window.guestCounts[type] + change;
+
+    // Limits
+    if (type === 'adults' && (newVal < 1 || newVal > 32)) return;
+    if (type === 'children' && (newVal < 0 || newVal > 16)) return;
+
+    window.guestCounts[type] = newVal;
+    document.getElementById(`count-${type}`).textContent = newVal;
+
+    // Update Display Text
+    const totalKhach = window.guestCounts.adults + window.guestCounts.children;
+    document.getElementById('guests-display').textContent = `${totalKhach} Guests`;
+}
+
+async function searchRooms(arrivalDate, departureDate, guests) {
+    const container = document.getElementById('rooms-container');
+    const title = document.getElementById('room-section-title');
+    const desc = document.getElementById('room-section-desc');
+
+    container.innerHTML = '<div class="loading-spinner">Simulating room recommendation system...</div>';
+    title.textContent = 'Searching...';
+    desc.textContent = '';
+
+    // Smooth scroll to results
+    document.getElementById('rooms').scrollIntoView({ behavior: 'smooth' });
+
+    try {
+        const response = await fetch('/api/rooms/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ arrivalDate, departureDate, guests })
+        });
+
+        if (!response.ok) throw new Error('Network error');
+        const recommendations = await response.json();
+
+        container.innerHTML = '';
+        title.textContent = 'Recommended Rooms';
+        desc.textContent = `Optimal options for ${guests} guests (${arrivalDate} → ${departureDate})`;
+
+        if (recommendations.length === 0) {
+            container.innerHTML = '<p style="text-align:center;width:100%;color:#a0a0a0;font-size:1.2rem;">Sorry! No rooms available for the selected dates and guests.</p>';
+            return;
+        }
+
+        recommendations.forEach(rec => {
+            const card = document.createElement('div');
+            card.className = 'room-card';
+
+            card.innerHTML = `
+                <div class="room-img-wrapper" style="cursor:pointer;" onclick="openRoomModal('${rec.comboName}', '${rec.RoomDesc}', '${rec.RoomImg}', ${rec.Occupancy})">
+                    <img src="/images/${rec.RoomImg}" alt="${rec.comboName}" onerror="this.src='/images/deluxe.jpg'">
+                    <div class="room-price-tag">$${rec.totalPrice} / night</div>
+                </div>
+                <div class="room-info">
+                    <h3 style="cursor:pointer;" onclick="openRoomModal('${rec.comboName}', '${rec.RoomDesc}', '${rec.RoomImg}', ${rec.Occupancy})">${rec.comboName}</h3>
+                    <p style="color:var(--primary); font-weight:600; font-size:0.9rem; margin-bottom: 0.5rem;">
+                        Max: ${rec.Occupancy} guests
+                    </p>
+                    <p>${rec.RoomDesc}</p>
+                    <div class="room-meta">
+                        <span class="meta-item">
+                            <span style="color:#4CAF50">✓ Rooms available</span>
+                        </span>
+                        <button class="btn btn-primary" style="padding: 0.5rem 1.25rem; font-size: 0.9rem;" 
+                            onclick="bookRoom('${rec.comboString}', '${arrivalDate}', '${departureDate}')">
+                            Book This Option
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error('Error fetching search results:', error);
+        container.innerHTML = '<p style="text-align:center;width:100%;color:red">Error loading data. Please try again.</p>';
+    }
+}
+
+function bookRoom(comboString, arrival, departure) {
+    const guest = JSON.parse(localStorage.getItem('guest'));
+    if (!guest) {
+        alert('Please login to proceed with booking!');
+        window.location.href = '/login.html';
+    } else {
+        window.location.href = `/book.html?combo=${encodeURIComponent(comboString)}&arrival=${arrival}&departure=${departure}`;
+    }
+}
+
+// Modal Logic
+function getFolderByTitle(title) {
+    if (title.includes('Suite')) return 'Suite';
+    if (title.includes('Deluxe')) return 'Deluxe';
+    if (title.includes('Standard Double')) return 'Standard_Double';
+    if (title.includes('Standard Twin')) return 'Standard_Twin';
+    return 'Standard_Twin';
+}
+
+function openRoomModal(title, desc, img, occupancy) {
+    document.getElementById('room-detail-modal').style.display = 'flex';
+    document.getElementById('modal-room-title').textContent = title;
+    document.getElementById('modal-room-desc').textContent = desc;
+
+    // Set folder and default image
+    window.currentGalleryFolder = getFolderByTitle(title);
+    document.getElementById('modal-main-img').src = `/images/${window.currentGalleryFolder}/1.jpg`;
+
+    // Reset active thumbnail and set img src
+    const row = document.querySelector('.thumbnail-row');
+    row.querySelectorAll('.thumb').forEach((t, i) => {
+        if (i === 0) t.classList.add('active');
+        else t.classList.remove('active');
+        
+        const imgEl = document.getElementById(`thumb-img-${i + 1}`);
+        if (imgEl) imgEl.src = `/images/${window.currentGalleryFolder}/${i + 1}.jpg`;
+    });
+
+    // Customize area randomly to look good
+    let sqmAmt = occupancy > 4 ? "65 m²" : (occupancy > 2 ? "35 m²" : "27 m²");
+    document.getElementById('modal-room-area').textContent = `📐 ${sqmAmt}`;
+}
+
+function closeRoomModal() {
+    document.getElementById('room-detail-modal').style.display = 'none';
+}
+
+function changeImage(element, index) {
+    // Remove active from peers
+    const row = document.querySelector('.thumbnail-row');
+    row.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+    element.classList.add('active');
+
+    // Update main image source
+    if (window.currentGalleryFolder) {
+        document.getElementById('modal-main-img').src = `/images/${window.currentGalleryFolder}/${index}.jpg`;
+    }
+}
+
+async function loadLatestReviews() {
+    const container = document.getElementById('reviews-container');
+    if (!container) return;
+
+    try {
+        const res = await fetch('/api/reviews/latest?limit=6');
+        if (!res.ok) throw new Error('Failed to fetch reviews');
+        const reviews = await res.json();
+        
+        try {
+            const avgRes = await fetch('/api/reviews/average');
+            if (avgRes.ok) {
+                const avgData = await avgRes.json();
+                const avgDisplay = document.getElementById('average-rating-display');
+                if (avgDisplay && avgData.AvgRating) {
+                    avgDisplay.textContent = `(${avgData.AvgRating} ★)`;
+                }
+            }
+        } catch (err) {
+            console.error('Error getting average rating', err);
+        }
+
+        container.innerHTML = '';
+        if (reviews.length === 0) {
+            container.innerHTML = '<p style="color:#888; text-align:center; width:100%;">No reviews yet.</p>';
+            return;
+        }
+
+        reviews.forEach(review => {
+            const stars = '★'.repeat(review.Rating) + '☆'.repeat(5 - review.Rating);
+            const date = new Date(review.ReviewDate).toLocaleDateString('en-US');
+            
+            const card = document.createElement('div');
+            card.className = 'review-card';
+            card.style.background = 'rgba(255,255,255,0.05)';
+            card.style.padding = '1.5rem';
+            card.style.borderRadius = '10px';
+            card.style.border = '1px solid rgba(255,255,255,0.1)';
+            
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h4 style="color: #fff; margin: 0;">${review.FirstName} ${review.LastName}</h4>
+                    <span style="color: #ffd700; font-size: 1.2rem;">${stars}</span>
+                </div>
+                <p style="color: #ccc; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1rem;">"${review.Comment}"</p>
+                <div style="color: #888; font-size: 0.8rem; text-align: right;">Posted on: ${date}</div>
+            `;
+            container.appendChild(card);
+        });
+    } catch (e) {
+        console.error(e);
+        container.innerHTML = '<p style="color:red; text-align:center; width:100%;">Error loading reviews.</p>';
+    }
+}
+
+===== public/register.html =====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Grand Palace Hotel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom, rgba(15, 17, 21, 0.4), var(--bg-dark)), url('/images/deluxe.jpg') center/cover;
+            padding: 2rem;
+        }
+        .auth-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            text-align: center;
+            animation: fadeIn 0.8s ease;
+        }
+        .auth-box h2 {
+            margin-bottom: 2rem;
+            color: var(--primary);
+            font-size: 2rem;
+        }
+        .row {
+            display: flex;
+            gap: 1rem;
+        }
+        .input-group {
+            margin-bottom: 1.25rem;
+            text-align: left;
+            flex: 1;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 0.85rem;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+        }
+        .input-group input:focus {
+            border-color: var(--primary);
+            background: rgba(0,0,0,0.4);
+        }
+        .auth-box .btn {
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .auth-footer {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        .auth-footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+        #error-msg {
+            color: #ff4d4d;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+        #success-msg {
+            color: #4CAF50;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <a href="/" style="text-decoration: none;"><div class="logo" style="margin-bottom: 1rem; font-size:1.2rem;">Grand Palace</div></a>
+            <h2>Join Us</h2>
+            <div id="error-msg"></div>
+            <div id="success-msg"></div>
+            <form id="register-form">
+                <div class="row">
+                    <div class="input-group">
+                        <label>First Name</label>
+                        <input type="text" id="firstName" required placeholder="John">
+                    </div>
+                    <div class="input-group">
+                        <label>Last Name</label>
+                        <input type="text" id="lastName" required placeholder="Doe">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="email" required placeholder="john@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <input type="tel" id="phoneNo" placeholder="Enter phone number">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required placeholder="Min. 6 characters" minlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary" id="reg-btn">Create Account</button>
+            </form>
+            <div class="auth-footer">
+                Already have an account? <a href="/login.html">Login here</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('email').value;
+            const phoneNo = document.getElementById('phoneNo').value;
+            const password = document.getElementById('password').value;
+            
+            const btn = document.getElementById('reg-btn');
+            const errorMsg = document.getElementById('error-msg');
+            const successMsg = document.getElementById('success-msg');
+
+            btn.textContent = 'Creating...';
+            btn.disabled = true;
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firstName, lastName, email, password, phoneNo })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    successMsg.textContent = 'Account created successfully! Redirecting...';
+                    successMsg.style.display = 'block';
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 2000);
+                } else {
+                    errorMsg.textContent = data.message || 'Registration failed';
+                    errorMsg.style.display = 'block';
+                    btn.textContent = 'Create Account';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Network error. Please try again.';
+                errorMsg.style.display = 'block';
+                btn.textContent = 'Create Account';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+
+===== public/login.html =====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Grand Palace Hotel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom, rgba(15, 17, 21, 0.4), var(--bg-dark)), url('/images/suite.jpg') center/cover;
+        }
+        .auth-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 3rem 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            text-align: center;
+            animation: fadeIn 0.8s ease;
+        }
+        .auth-box h2 {
+            margin-bottom: 2rem;
+            color: var(--primary);
+            font-size: 2rem;
+        }
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+        }
+        .input-group input:focus {
+            border-color: var(--primary);
+            background: rgba(0,0,0,0.4);
+        }
+        .auth-box .btn {
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .auth-footer {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        .auth-footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+        #error-msg {
+            color: #ff4d4d;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <a href="/" style="text-decoration: none;"><div class="logo" style="margin-bottom: 1rem; font-size:1.2rem;">Grand Palace</div></a>
+            <h2>Welcome Back</h2>
+            <div id="error-msg"></div>
+            <form id="login-form">
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" required placeholder="Enter your email">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn btn-primary" id="login-btn">Login</button>
+            </form>
+            <div class="auth-footer">
+                Don't have an account? <a href="/register.html">Register here</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('login-btn');
+            const errorMsg = document.getElementById('error-msg');
+
+            btn.textContent = 'Logging in...';
+            btn.disabled = true;
+            errorMsg.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.role === 'admin') {
+                        localStorage.setItem('employee', JSON.stringify(data.user));
+                        alert('Admin login successful!');
+                        window.location.href = '/dashboard.html';
+                    } else {
+                        localStorage.setItem('guest', JSON.stringify(data.user));
+                        alert('Login successful!');
+                        window.location.href = '/';
+                    }
+                } else {
+                    errorMsg.textContent = data.message || 'Login failed';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Network error. Please try again.';
+                errorMsg.style.display = 'block';
+            } finally {
+                btn.textContent = 'Login';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+
+===== public/dashboard.html =====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Grand Palace Hotel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body { background-color: var(--bg-dark); }
+        .dashboard { display: flex; min-height: 100vh; }
+        .sidebar {
+            width: 250px;
+            background: var(--bg-light);
+            border-right: 1px solid var(--glass-border);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-brand { font-size: 1.5rem; font-weight: 700; color: var(--primary); margin-bottom: 3rem; }
+        .nav-item { padding: 1rem; color: #ccc; cursor: pointer; border-radius: 8px; transition: var(--transition); margin-bottom: 0.5rem; }
+        .nav-item:hover, .nav-item.active { background: rgba(203, 160, 82, 0.1); color: var(--primary); }
+        .main-content { flex: 1; padding: 2rem 3rem; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 2rem; align-items: center; }
+        .header h2 { font-size: 2rem; color: #fff; }
+
+        /* Profile corner */
+        .profile-corner { position: relative; }
+        .profile-trigger {
+            display: flex; align-items: center; gap: 0.6rem; cursor: pointer;
+            color: #fff; padding: 0.5rem 1rem; border-radius: 50px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+        }
+        .profile-trigger:hover { border-color: var(--primary); }
+        .profile-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--primary);
+            color: #fff; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.9rem;
+        }
+        .profile-dropdown {
+            display: none; position: absolute; top: 110%; right: 0;
+            background: var(--bg-light); border: 1px solid var(--glass-border);
+            border-radius: 8px; min-width: 200px; overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 1000;
+        }
+        .profile-dropdown .role-label {
+            padding: 0.75rem 1.25rem; color: var(--primary); font-size: 0.8rem;
+            text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--glass-border);
+        }
+        .profile-dropdown a {
+            display: block; padding: 0.75rem 1.25rem; color: #ddd;
+            text-decoration: none; font-size: 0.9rem;
+        }
+        .profile-dropdown a:hover { background: rgba(203, 160, 82, 0.1); color: var(--primary); }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--glass-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+        .data-table th, .data-table td {
+            padding: 1.25rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .data-table th { background: rgba(0,0,0,0.2); color: var(--primary); font-weight: 600; }
+        .data-table tr:hover { background: rgba(255,255,255,0.02); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--glass-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border); text-align: center; }
+        .stat-card h3 { color: #ccc; font-size: 1rem; margin-bottom: 0.5rem; font-weight: 400; }
+        .stat-card .value { font-size: 2rem; color: var(--primary); font-weight: 700; }
+        .btn-action { padding: 0.4rem 0.8rem; border-radius: 6px; border: none; cursor: pointer; font-family: inherit; font-size: 0.85rem; margin-right: 0.5rem; margin-bottom: 0.5rem; }
+        .btn-checkin { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); }
+        .btn-checkout { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid rgba(52, 152, 219, 0.4); }
+        .btn-cancel { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); }
+
+        .room-status-badge {
+            padding: 0.3rem 0.8rem; border-radius: 50px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;
+        }
+        .status-available { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+        .status-occupied { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+        .status-cleaning { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
+        .status-maintenance { background: rgba(149, 165, 166, 0.2); color: #95a5a6; }
+
+        select.status-select {
+            background: var(--bg-light); color: #fff; border: 1px solid var(--glass-border);
+            border-radius: 6px; padding: 0.4rem 0.6rem; font-family: inherit; font-size: 0.85rem;
+        }
+
+        .tab-section { display: none; }
+        .tab-section.active { display: block; }
+
+        .walkin-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .walkin-modal {
+            width: 100%;
+            max-width: 700px;
+             background: var(--bg-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .walkin-modal h3 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .walkin-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .walkin-modal input,
+        .walkin-modal select {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--bg-light);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+        }
+
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .walkin-actions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-primary {
+            background: rgba(203,160,82,0.15);
+            color: var(--primary);
+            border: 1px solid rgba(203,160,82,0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            color: #ccc;
+            border: 1px solid var(--glass-border);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <aside class="sidebar">
+            <div class="sidebar-brand">Grand Palace</div>
+            <div class="nav-item active" data-tab="bookings" id="nav-bookings">Bookings</div>
+            <div class="nav-item" data-tab="rooms" id="nav-rooms">Rooms</div>
+            <div class="nav-item" data-tab="bills" id="nav-bills">Bills</div>
+        </aside>
+        <main class="main-content">
+            <div class="header">
+                <h2 id="tab-title">Bookings</h2>
+                <div class="profile-corner">
+                    <div class="profile-trigger" onclick="toggleProfileMenu(event)">
+                        <div class="profile-avatar" id="profile-initial"></div>
+                        <span id="profile-name"></span>
+                    </div>
+                    <div class="profile-dropdown" id="profile-dropdown">
+                        <div class="role-label" id="profile-role"></div>
+                        <a href="#" onclick="logout()">Log out</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bookings Tab -->
+            <section class="tab-section active" id="tab-bookings">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h3>This Month's Bookings</h3>
+                        <div class="value" id="stat-total">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Checked In</h3>
+                        <div class="value" id="stat-checkin">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Checked Out</h3>
+                        <div class="value" id="stat-checkout">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Cancellation Rate</h3>
+                        <div class="value" id="stat-rate">0%</div>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Booking ID</th>
+                            <th>Guest Name</th>
+                            <th>Room Type (No)</th>
+                            <th>Arrival Date</th>
+                            <th>Departure Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookings-tbody">
+                        <tr><td colspan="7" style="text-align:center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Rooms Tab -->
+            <section class="tab-section" id="tab-rooms">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Room No</th>
+                            <th>Type</th>
+                            <th>Floor</th>
+                            <th>Occupancy</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rooms-tbody">
+                        <tr>
+                            <td colspan="7" style="text-align:center">
+                                Loading...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Bills Tab -->
+            <section class="tab-section" id="tab-bills">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice No</th>
+                            <th>Guest Name</th>
+                            <th>Room(s)</th>
+                            <th>Total Amount</th>
+                            <th>Payment Mode</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bills-tbody">
+                        <tr><td colspan="7" style="text-align:center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <div id="walkin-modal" class="walkin-overlay">
+        <div class="walkin-modal">
+            <h3>Create Booking</h3>
+
+            <div class="walkin-grid">
+                <input id="wi-firstName" placeholder="First Name">
+                <input id="wi-lastName" placeholder="Last Name">
+
+                <input id="wi-phone" placeholder="Phone">
+                <input id="wi-email" placeholder="Email">
+
+                <input id="wi-passport" placeholder="Passport">
+                <input id="wi-roomNo" readonly>
+
+                <div>
+                    <label>Adults</label>
+                    <input
+                        id="wi-adults"
+                        type="number"
+                        min="1"
+                        value="1">
+                </div>
+
+                <div>
+                    <label>Children</label>
+                    <input
+                        id="wi-children"
+                        type="number"
+                        min="0"
+                        value="0">
+                </div>
+
+                <div>
+                    <label for="wi-arrival">Check-in Date</label>
+                    <input id="wi-arrival" type="date">
+                </div>
+
+                <div>
+                    <label for="wi-departure">Check-out Date</label>
+                    <input id="wi-departure" type="date">
+                </div>
+            </div>
+
+            <div class="walkin-actions">
+                <button class="btn-action btn-primary"
+                        onclick="createWalkInBooking()">
+                    Create Booking
+                </button>
+
+                <button class="btn-action btn-secondary"
+                        onclick="closeWalkInModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let emp;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            emp = JSON.parse(localStorage.getItem('employee'));
+            if (!emp) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Profile corner
+            document.getElementById('profile-initial').textContent = emp.FirstName.charAt(0).toUpperCase();
+            document.getElementById('profile-name').textContent = emp.FirstName;
+            document.getElementById('profile-role').textContent = emp.RoleTitle;
+
+            // Permission-gate nav items
+            const perms = emp.Permissions || [];
+            if (!perms.includes('view_bookings')) document.getElementById('nav-bookings').style.display = 'none';
+            if (!perms.includes('view_rooms')) document.getElementById('nav-rooms').style.display = 'none';
+            if (!perms.includes('view_bills')) document.getElementById('nav-bills').style.display = 'none';
+
+            // Activate first visible tab
+            const firstVisible = document.querySelector('.nav-item:not([style*="display: none"])');
+            if (firstVisible) switchTab(firstVisible.dataset.tab);
+
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => switchTab(item.dataset.tab));
+            });
+
+            document.addEventListener('click', () => {
+                document.getElementById('profile-dropdown').style.display = 'none';
+            });
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`nav-${tab}`).classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById('tab-title').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
+
+            if (tab === 'bookings') { fetchStatistics(); fetchBookings(); }
+            if (tab === 'rooms') fetchRooms();
+            if (tab === 'bills') fetchBills();
+        }
+
+        function toggleProfileMenu(e) {
+            e.stopPropagation();
+            const d = document.getElementById('profile-dropdown');
+            d.style.display = d.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function logout() {
+            localStorage.removeItem('employee');
+            window.location.href = '/login.html';
+        }
+
+        // ---------- BOOKINGS ----------
+        async function fetchStatistics() {
+            try {
+                const res = await fetch(`/api/bookings/statistics?employeeId=${emp.EmployeeID}`);
+                const stats = await res.json();
+                document.getElementById('stat-total').textContent = stats.TotalBookings;
+                document.getElementById('stat-checkin').textContent = stats.CheckedIn;
+                document.getElementById('stat-checkout').textContent = stats.CheckedOut;
+                document.getElementById('stat-rate').textContent = stats.CancellationRate + '%';
+            } catch (error) { console.error(error); }
+        }
+
+        async function updateStatus(id, status) {
+            if (!confirm(`Are you sure you want to mark this booking as ${status}?`)) return;
+            try {
+                const res = await fetch(`/api/bookings/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, employeeId: emp.EmployeeID })
+                });
+                if (res.ok) { fetchStatistics(); fetchBookings(); }
+                else { const err = await res.json(); alert(err.message || 'Failed to update status'); }
+            } catch (error) { console.error(error); alert('Network error'); }
+        }
+
+        function openWalkInModal(roomNo) {
+            document.getElementById('wi-roomNo').value = roomNo;
+
+            const today = new Date();
+
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
+
+            document.getElementById('wi-arrival').value =
+                today.toISOString().split('T')[0];
+
+            document.getElementById('wi-departure').value =
+                tomorrow.toISOString().split('T')[0];
+
+            document.getElementById('walkin-modal').style.display = 'flex';
+        }
+
+        function closeWalkInModal() {
+            document.getElementById('walkin-modal').style.display = 'none';
+        }
+
+        document.getElementById('wi-arrival')
+            .addEventListener('change', e => {
+
+                const arrival = new Date(e.target.value);
+                arrival.setDate(arrival.getDate() + 1);
+
+                document.getElementById('wi-departure').value =
+                    arrival.toISOString().split('T')[0];
+            });
+                
+        async function createWalkInBooking() {
+            try {
+
+                const payload = {
+                    firstName: document.getElementById('wi-firstName').value,
+                    lastName: document.getElementById('wi-lastName').value,
+                    phoneNo: document.getElementById('wi-phone').value,
+                    email: document.getElementById('wi-email').value,
+                    passportNo: document.getElementById('wi-passport').value,
+
+                    roomNo: document.getElementById('wi-roomNo').value,
+
+                    arrivalDate: document.getElementById('wi-arrival').value,
+                    departureDate: document.getElementById('wi-departure').value,
+
+                    adults: parseInt(document.getElementById('wi-adults').value, 10),
+                    children: parseInt(document.getElementById('wi-children').value, 10),
+
+                    employeeId: emp.EmployeeID,
+                    hotelCode: emp.HotelCode,
+                    checkInNow: true
+                };
+
+                console.log('Walk-in payload:', payload);
+
+                const res = await fetch('/api/bookings/walkin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await res.json();
+
+                console.log('Walk-in response:', result);
+
+                if (!res.ok) {
+                    throw new Error(result.message || 'Request failed');
+                }
+
+                alert('Booking created');
+
+                resetWalkInForm();
+                closeWalkInModal();
+                fetchRooms();
+                fetchBookings();
+
+            } catch (err) {
+                console.error(err);
+                alert(err.message);
+            }
+        }
+
+        function resetWalkInForm() {
+            document.getElementById('wi-firstName').value = '';
+            document.getElementById('wi-lastName').value = '';
+            document.getElementById('wi-phone').value = '';
+            document.getElementById('wi-email').value = '';
+            document.getElementById('wi-passport').value = '';
+
+            document.getElementById('wi-adults').value = 1;
+            document.getElementById('wi-children').value = 0;
+
+            document.getElementById('wi-roomNo').value = '';
+        }
+
+        async function fetchBookings() {
+            try {
+                const response = await fetch(`/api/bookings?employeeId=${emp.EmployeeID}`);
+                const bookings = await response.json();
+                const tbody = document.getElementById('bookings-tbody');
+
+                if (response.status === 403) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">You do not have permission to view this.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                if (bookings.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No bookings found.</td></tr>';
+                    return;
+                }
+
+                bookings.forEach(b => {
+                    const dr = new Date(b.ArrivalDate).toLocaleDateString();
+                    const dp = new Date(b.DepartureDate).toLocaleDateString();
+                    const bStatus = b.BookingStatus || 'Pending';
+                    let statusClass = 'color: var(--primary);';
+                    if (bStatus === 'CheckedIn') statusClass = 'color: #2ecc71;';
+                    else if (bStatus === 'CheckedOut') statusClass = 'color: #3498db;';
+                    else if (bStatus === 'Cancelled') statusClass = 'color: #e74c3c;';
+
+                    let actions = '';
+                    const canManage = (emp.Permissions || []).includes('manage_bookings');
+                    if (canManage) {
+                        if (bStatus === 'Pending' || bStatus === 'Confirmed') {
+                            actions += `<button class="btn-action btn-checkin" onclick="updateStatus(${b.BookingID}, 'CheckedIn')">Check In</button>`;
+                            actions += `<button class="btn-action btn-cancel" onclick="updateStatus(${b.BookingID}, 'Cancelled')">Cancel</button>`;
+                        } else if (bStatus === 'CheckedIn') {
+                            actions += `<button class="btn-action btn-checkout" onclick="updateStatus(${b.BookingID}, 'CheckedOut')">Check Out</button>`;
+                        }
+                    }
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>#${b.BookingID}</td>
+                            <td>${b.GuestName}</td>
+                            <td>${b.RoomType} (${b.RoomNo})</td>
+                            <td>${dr}</td>
+                            <td>${dp}</td>
+                            <td style="${statusClass} font-weight: 600;">${bStatus}</td>
+                            <td>${actions || '-'}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) { console.error(error); }
+        }
+
+        // ---------- ROOMS ----------
+        async function fetchRooms() {
+            try {
+                const response = await fetch(`/api/rooms/status?employeeId=${emp.EmployeeID}`);
+                const rooms = await response.json();
+                const tbody = document.getElementById('rooms-tbody');
+
+                if (response.status === 403) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">You do not have permission to view this.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                const canManage = (emp.Permissions || []).includes('manage_rooms');
+
+                rooms.forEach(r => {
+                    const status = r.RoomStatus || 'Available';
+                    const statusClass = 'status-' + status.toLowerCase();
+                    const statusCell = canManage
+                        ? `<select class="status-select" onchange="updateRoomStatus('${r.RoomNo}', this.value)">
+                            <option value="Available" ${status === 'Available' ? 'selected' : ''}>Available</option>
+                            <option value="Occupied" ${status === 'Occupied' ? 'selected' : ''}>Occupied</option>
+                            <option value="Cleaning" ${status === 'Cleaning' ? 'selected' : ''}>Cleaning</option>
+                            <option value="Maintenance" ${status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+                           </select>`
+                        : `<span class="room-status-badge ${statusClass}">${status}</span>`;
+
+                    const canCreateBooking =
+                        emp?.Permissions?.includes('manage_bookings');
+
+                    const walkInBtn =
+                        status === 'Available' && canCreateBooking
+                        ? `<button
+                                class="btn-action btn-checkin"
+                                onclick="openWalkInModal('${r.RoomNo}')">
+                                Walk-in
+                        </button>`
+                        : '-';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${r.RoomNo}</td>
+                            <td>${r.RoomType}</td>
+                            <td>${r.FloorNo}</td>
+                            <td>${r.Occupancy}</td>
+                            <td>$${r.RoomPrice}</td>
+                            <td>${statusCell}</td>
+                            <td>${walkInBtn}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) { console.error(error); }
+        }
+
+        async function updateRoomStatus(roomNo, status) {
+            try {
+                const res = await fetch(`/api/rooms/${roomNo}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status, employeeId: emp.EmployeeID })
+                });
+                if (!res.ok) { const err = await res.json(); alert(err.message || 'Failed to update room status'); }
+            } catch (error) { console.error(error); alert('Network error'); }
+        }
+
+        // ---------- BILLS ----------
+        async function fetchBills() {
+            try {
+                const response = await fetch(`/api/bills?employeeId=${emp.EmployeeID}`);
+                const bills = await response.json();
+                const tbody = document.getElementById('bills-tbody');
+
+                if (response.status === 403) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">You do not have permission to view this.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                if (bills.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No bills found.</td></tr>';
+                    return;
+                }
+
+                const canManage = (emp.Permissions || []).includes('manage_bills');
+
+                bills.forEach(b => {
+                    const statusClass = b.PaymentStatus === 'Paid' ? 'color:#2ecc71;' : 'color:#f39c12;';
+                    const actions = (canManage && b.PaymentStatus !== 'Paid')
+                        ? `<button class="btn-action btn-checkin" onclick="payInvoice(${b.InvoiceNo})">Mark Paid</button>`
+                        : '-';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>#${b.InvoiceNo}</td>
+                            <td>${b.GuestName}</td>
+                            <td>${b.RoomNo || '-'}</td>
+                            <td>$${b.TotalAmount || '0.00'}</td>
+                            <td>${b.PaymentMode || '-'}</td>
+                            <td style="${statusClass} font-weight:600;">${b.PaymentStatus || 'Pending'}</td>
+                            <td>${actions}</td>
+                        </tr>
+                    `;
+                });
+            } catch (error) { console.error(error); }
+        }
+
+        async function payInvoice(invoiceNo) {
+            if (!confirm('Mark this invoice as paid?')) return;
+            try {
+                const res = await fetch(`/api/bills/pay/${invoiceNo}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ employeeId: emp.EmployeeID })
+                });
+                if (res.ok) fetchBills();
+                else { const err = await res.json(); alert(err.message || 'Failed to update invoice'); }
+            } catch (error) { console.error(error); alert('Network error'); }
+        }
+    </script>
+</body>
+</html>
+===== public/book.html =====
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Room - Grand Palace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom, rgba(15, 17, 21, 0.6), var(--bg-dark)), url('/images/standard.jpg') center/cover;
+            padding: 2rem;
+        }
+        .auth-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            padding: 3rem 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .auth-box h2 { color: var(--primary); margin-bottom: 2rem; }
+        .input-group { text-align: left; margin-bottom: 1.5rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; color: #ddd; }
+        .input-group input { 
+            width: 100%; padding: 1rem; background: rgba(0,0,0,0.4); 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #fff; font-family: inherit; 
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <a href="/" style="text-decoration: none; display: block; text-align: center;"><div class="logo" style="margin-bottom: 1rem;">Grand Palace</div></a>
+            <div class="booking-wrapper">
+        <div class="booking-card" style="max-width: 900px; width: 100%;">
+            <h2 style="text-align:center; color:var(--primary); margin-bottom: 2rem;">Booking Details</h2>
+            
+            <div style="display:flex; flex-wrap: wrap; gap: 2rem;">
+                
+                <!-- Left: Booking Form -->
+                <div style="flex: 2; min-width: 300px;">
+                    <h3 style="margin-bottom: 1rem;">1. Contact Information</h3>
+                    <form id="booking-form">
+                        <div class="input-group">
+                            <label>Lead Guest Name *</label>
+                            <input type="text" id="guest-name" required placeholder="Enter your full name...">
+                        </div>
+                        <div style="display: flex; gap: 1rem;">
+                            <div class="input-group" style="flex:1">
+                                <label>Email Address *</label>
+                                <input type="email" id="guest-email" required placeholder="Confirmation email...">
+                            </div>
+                            <div class="input-group" style="flex:1">
+                                <label>Phone Number *</label>
+                                <input type="tel" id="guest-phone" required placeholder="Contact phone...">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Nationality</label>
+                            <select id="guest-nation">
+                                <option value="VN">Vietnam</option>
+                                <option value="US">United States</option>
+                                <option value="KR">South Korea</option>
+                                <option value="JP">Japan</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Special Requests (Optional)</label>
+                            <textarea id="guest-request" rows="3" placeholder="Example: Smoking room, baby crib needed, etc..." style="width: 100%; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.5); color: white; padding: 1rem; border-radius: 4px;"></textarea>
+                        </div>
+
+                        <div id="msg" style="margin-bottom:1rem; font-weight:600;"></div>
+                        <button type="submit" id="confirm-btn" class="btn btn-primary" style="width:100%; font-size: 1.1rem; padding: 1rem;">Confirm & Book Room</button>
+                    </form>
+                </div>
+
+                <!-- Right: Summary -->
+                <div style="flex: 1; min-width: 250px; background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    <h3 style="margin-bottom: 1rem; border-bottom: 1px solid #444; padding-bottom: 0.5rem;">2. Booking Summary</h3>
+                    <div id="room-info" style="font-size: 1rem; line-height: 1.8; color: #ccc;">
+                        Loading info...
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const guest = JSON.parse(localStorage.getItem('guest'));
+            if(!guest) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            const params = new URLSearchParams(window.location.search);
+            const combo = params.get('combo');
+            const arrival = params.get('arrival');
+            const departure = params.get('departure');
+            
+            if(!combo || !arrival || !departure) {
+                window.location.href = '/';
+                return;
+            }
+
+            const comboParts = combo.split(',').map(part => {
+                const [type, countStr] = part.split(':');
+                return { type, count: parseInt(countStr) };
+            });
+
+            // Pre-fill user data
+            document.getElementById('guest-name').value = guest.FirstName + ' ' + guest.LastName;
+            document.getElementById('guest-email').value = guest.Email;
+            
+            let roomInfoHtml = '';
+            comboParts.forEach(p => {
+                roomInfoHtml += `<strong style="color:white; font-size: 1.2rem;">${p.count} x ${p.type}</strong><br>`;
+            });
+
+            // Format Summary visually
+            document.getElementById('room-info').innerHTML = `
+                <div style="margin-bottom: 1rem;">
+                    <span style="color:#888; font-size: 0.85rem;">Requested Rooms</span><br>
+                    ${roomInfoHtml}
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <span style="color:#888; font-size: 0.85rem;">Check-in (From 14:00)</span><br>
+                    <strong style="color:white;">${arrival}</strong>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <span style="color:#888; font-size: 0.85rem;">Check-out (Before 12:00)</span><br>
+                    <strong style="color:white;">${departure}</strong>
+                </div>
+                <hr style="border-color: #444; margin: 1rem 0;">
+                <p style="color:var(--primary); font-size: 0.8rem;">* Free cancellation up to 24 hours before check-in.</p>
+            `;
+
+            document.getElementById('booking-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const msg = document.getElementById('msg');
+                const btn = document.getElementById('confirm-btn');
+
+                btn.disabled = true;
+                btn.textContent = 'Processing Booking...';
+
+                try {
+                    const response = await fetch('/api/bookings/order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            guestId: guest.GuestID, 
+                            comboParts: comboParts, 
+                            arrivalDate: arrival, 
+                            departureDate: departure 
+                        })
+                    });
+                    const data = await response.json();
+                    if(!response.ok) throw new Error(data.message);
+
+                    msg.style.color = '#4CAF50';
+                    msg.innerHTML = `Success! Order ID: <b>#${data.invoiceNo}</b>. You will be redirected to the Home page.`;
+                    setTimeout(() => window.location.href = '/index.html', 4000);
+                } catch(e) {
+                    msg.style.color = '#ff4d4d';
+                    msg.textContent = 'Processing Error: ' + e.message;
+                    btn.disabled = false;
+                    btn.textContent = 'Try Again';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
+===== public/employee-login.html =====
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Portal - Grand Palace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(to bottom, rgba(15, 17, 21, 0.8), var(--bg-dark));
+            /* darker for admin */
+            padding: 2rem;
+        }
+
+        .auth-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid var(--primary);
+            /* highlight border for admin */
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 15px 35px rgba(203, 160, 82, 0.2);
+            text-align: center;
+        }
+
+        .auth-box h2 {
+            margin-bottom: 2rem;
+            color: #fff;
+            font-size: 1.8rem;
+        }
+
+        .auth-box h2 span {
+            color: var(--primary);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ccc;
+            font-size: 0.9rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+
+        .auth-box .btn {
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        #error-msg {
+            color: #ff4d4d;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <h2><span>Staff</span> Portal</h2>
+            <div id="error-msg"></div>
+            <form id="emp-login-form">
+                <div class="input-group">
+                    <label>Employee Email</label>
+                    <input type="email" id="email" required placeholder="admin@grandpalace.com">
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="password" required placeholder="Enter your password">
+                </div>
+                <button type="submit" class="btn btn-primary" id="login-btn">Secure Login</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('emp-login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const btn = document.getElementById('login-btn');
+            const errorMsg = document.getElementById('error-msg');
+
+            btn.textContent = 'Authenticating...';
+            btn.disabled = true;
+            errorMsg.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/auth/employee-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('employee', JSON.stringify(data.employee));
+                    window.location.href = '/dashboard.html';
+                } else {
+                    errorMsg.textContent = data.message || 'Login failed';
+                    errorMsg.style.display = 'block';
+                    btn.textContent = 'Secure Login';
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Network error.';
+                errorMsg.style.display = 'block';
+                btn.textContent = 'Secure Login';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>
+===== sql/mysql/schema.sql =====
+-- BẮT BUỘC: Sử dụng database vừa tạo để chạy các lệnh bên dưới
+USE hotel_management;
+GO
+
+-- Drop in reverse dependency order to respect foreign keys
+IF OBJECT_ID('Review', 'U') IS NOT NULL DROP TABLE Review;
+IF OBJECT_ID('RolePermission', 'U') IS NOT NULL DROP TABLE RolePermission;
+IF OBJECT_ID('Booking', 'U') IS NOT NULL DROP TABLE Booking;
+IF OBJECT_ID('Bill', 'U') IS NOT NULL DROP TABLE Bill;
+IF OBJECT_ID('Guest', 'U') IS NOT NULL DROP TABLE Guest;
+IF OBJECT_ID('Employee', 'U') IS NOT NULL DROP TABLE Employee;
+IF OBJECT_ID('Room', 'U') IS NOT NULL DROP TABLE Room;
+IF OBJECT_ID('RoomType', 'U') IS NOT NULL DROP TABLE RoomType;
+IF OBJECT_ID('Hotel', 'U') IS NOT NULL DROP TABLE Hotel;
+IF OBJECT_ID('Permission', 'U') IS NOT NULL DROP TABLE Permission;
+IF OBJECT_ID('Role', 'U') IS NOT NULL DROP TABLE Role;
+GO
+
+-- 1. Table Role
+CREATE TABLE Role (
+    RoleID INT PRIMARY KEY IDENTITY(1,1),
+    RoleTitle VARCHAR(100) NOT NULL,
+    RoleDesc NVARCHAR(MAX)
+);
+
+-- 2. Table Hotel
+CREATE TABLE Hotel (
+    HotelCode INT PRIMARY KEY IDENTITY(1,1),
+    HotelName NVARCHAR(255) NOT NULL,
+    Address NVARCHAR(255),
+    Postcode VARCHAR(50),
+    City NVARCHAR(100),
+    Country NVARCHAR(100),
+    NumRooms INT,
+    PhoneNo VARCHAR(50),
+    StarRating INT
+);
+
+-- 3. Table RoomType
+CREATE TABLE RoomType (
+    RoomType VARCHAR(50) PRIMARY KEY,
+    RoomPrice DECIMAL(18, 2) NOT NULL,
+    RoomImg VARCHAR(255),
+    RoomDesc NVARCHAR(MAX)
+);
+
+-- 4. Table Room
+CREATE TABLE Room (
+    RoomNo VARCHAR(50) PRIMARY KEY,
+    RoomType VARCHAR(50) FOREIGN KEY REFERENCES RoomType(RoomType),
+    HotelCode INT FOREIGN KEY REFERENCES Hotel(HotelCode),
+    Occupancy INT,
+    FloorNo INT,
+    RoomStatus VARCHAR(50)
+);
+
+-- 5. Table Employee
+CREATE TABLE Employee (
+    EmployeeID INT PRIMARY KEY IDENTITY(1,1),
+    HotelCode INT FOREIGN KEY REFERENCES Hotel(HotelCode),
+    RoleID INT FOREIGN KEY REFERENCES Role(RoleID),
+    FirstName NVARCHAR(100) NOT NULL,
+    LastName NVARCHAR(100) NOT NULL,
+    DOB DATE,
+    Gender NVARCHAR(20),
+    PhoneNo VARCHAR(50),
+    Email VARCHAR(100),
+    Password VARCHAR(255) NOT NULL,
+    Salary DECIMAL(18, 2)
+);
+
+-- 6. Table Guest
+CREATE TABLE Guest (
+    GuestID INT PRIMARY KEY IDENTITY(1,1),
+    FirstName NVARCHAR(100) NOT NULL,
+    LastName NVARCHAR(100) NOT NULL,
+    DOB DATE,
+    Gender NVARCHAR(20),
+    PhoneNo VARCHAR(50),
+    Email VARCHAR(100),
+    Password VARCHAR(255) NOT NULL,
+    PassportNo VARCHAR(50),
+);
+
+-- 7. Table Bill
+CREATE TABLE Bill (
+    InvoiceNo INT PRIMARY KEY IDENTITY(1,1),
+    GuestID INT FOREIGN KEY REFERENCES Guest(GuestID),
+    TotalAmount DECIMAL(18, 2),
+    RoomService DECIMAL(18, 2),
+    IfLateCheckout BIT,  -- Cờ đánh dấu trả phòng trễ (0 hoặc 1)
+    PaymentDate DATE,
+    PaymentMode VARCHAR(50),
+    PaymentStatus VARCHAR(50),
+);
+
+-- 8. Table Booking
+CREATE TABLE Booking (
+    BookingID INT PRIMARY KEY IDENTITY(1,1),
+    HotelCode INT FOREIGN KEY REFERENCES Hotel(HotelCode),
+    GuestID INT FOREIGN KEY REFERENCES Guest(GuestID),
+    RoomNo VARCHAR(50) FOREIGN KEY REFERENCES Room(RoomNo),
+    InvoiceNo INT FOREIGN KEY REFERENCES Bill(InvoiceNo),
+    BookingDate DATE,
+    BookingTime TIME,
+    ArrivalDate DATE,
+    DepartureDate DATE,
+    NumAdults INT,
+    NumChildren INT,
+    SpecialReq NVARCHAR(MAX),
+    BookingStatus VARCHAR(50)
+);
+
+-- 9. Table Review
+CREATE TABLE Review (
+    ReviewID INT PRIMARY KEY IDENTITY(1,1),
+    GuestID INT FOREIGN KEY REFERENCES Guest(GuestID),
+    InvoiceNo INT FOREIGN KEY REFERENCES Bill(InvoiceNo),
+    Rating INT CHECK (Rating >= 1 AND Rating <= 5),
+    Comment NVARCHAR(MAX),
+    ReviewDate DATE DEFAULT GETDATE()
+);
+
+-- 10. Table Permission
+CREATE TABLE Permission (
+    PermissionID INT IDENTITY(1,1) PRIMARY KEY,
+    PermissionKey VARCHAR(50) NOT NULL UNIQUE,
+    PermissionDesc NVARCHAR(255)
+);
+GO
+
+-- 11. Table RolePermission
+CREATE TABLE RolePermission (
+    RoleID INT NOT NULL,
+    PermissionID INT NOT NULL,
+    PRIMARY KEY (RoleID, PermissionID),
+    FOREIGN KEY (RoleID) REFERENCES Role(RoleID),
+    FOREIGN KEY (PermissionID) REFERENCES Permission(PermissionID)
+);
+GO
+===== sql/mysql/hotel.sql =====
+USE hotel_management;
+GO
+
+-- ========================================
+-- HOTEL
+-- ========================================
+INSERT INTO Hotel (HotelName, Address, Postcode, City, Country, NumRooms, PhoneNo)
+SELECT 'Grand Palace Hotel', '123 Main St', '10000', 'Hanoi', 'Vietnam', 20, '024-3822-0000'
+WHERE NOT EXISTS (SELECT 1 FROM Hotel WHERE HotelName = 'Grand Palace Hotel');
+GO
+
+-- ========================================
+-- ROOM TYPES
+-- ========================================
+INSERT INTO RoomType (RoomType, RoomPrice, RoomImg, RoomDesc)
+SELECT 'Standard Twin', 60.00, 'standard.jpg', 'Standard room with 2 single beds for up to 2 guests'
+WHERE NOT EXISTS (SELECT 1 FROM RoomType WHERE RoomType = 'Standard Twin');
+
+INSERT INTO RoomType (RoomType, RoomPrice, RoomImg, RoomDesc)
+SELECT 'Standard Double', 75.00, 'standard.jpg', 'Standard room with 2 double beds for up to 4 guests'
+WHERE NOT EXISTS (SELECT 1 FROM RoomType WHERE RoomType = 'Standard Double');
+
+INSERT INTO RoomType (RoomType, RoomPrice, RoomImg, RoomDesc)
+SELECT 'Deluxe', 120.00, 'deluxe.jpg', 'Premium deluxe room with city view for up to 4 guests'
+WHERE NOT EXISTS (SELECT 1 FROM RoomType WHERE RoomType = 'Deluxe');
+
+INSERT INTO RoomType (RoomType, RoomPrice, RoomImg, RoomDesc)
+SELECT 'Suite', 350.00, 'suite.jpg', 'Large luxury suite for families or groups up to 16 guests'
+WHERE NOT EXISTS (SELECT 1 FROM RoomType WHERE RoomType = 'Suite');
+GO
+
+USE hotel_management;
+GO
+
+-- ========================================
+-- ROLES
+-- ========================================
+INSERT INTO Role (RoleTitle, RoleDesc)
+SELECT 'Admin', 'System administrator (IT)'
+WHERE NOT EXISTS (SELECT 1 FROM Role WHERE RoleTitle = 'Admin');
+
+INSERT INTO Role (RoleTitle, RoleDesc)
+SELECT 'Manager', 'Hotel operations manager'
+WHERE NOT EXISTS (SELECT 1 FROM Role WHERE RoleTitle = 'Manager');
+
+INSERT INTO Role (RoleTitle, RoleDesc)
+SELECT 'Receptionist', 'Handles check-in, check-out, and booking'
+WHERE NOT EXISTS (SELECT 1 FROM Role WHERE RoleTitle = 'Receptionist');
+
+INSERT INTO Role (RoleTitle, RoleDesc)
+SELECT 'Housekeeper', 'Updates room cleaning status'
+WHERE NOT EXISTS (SELECT 1 FROM Role WHERE RoleTitle = 'Housekeeper');
+
+INSERT INTO Role (RoleTitle, RoleDesc)
+SELECT 'Maintenance', 'Handles repairs and room maintenance requests'
+WHERE NOT EXISTS (SELECT 1 FROM Role WHERE RoleTitle = 'Maintenance');
+
+INSERT INTO Role (RoleTitle, RoleDesc)
+SELECT 'Accountant', 'Manages billing, invoices and financial records'
+WHERE NOT EXISTS (SELECT 1 FROM Role WHERE RoleTitle = 'Accountant');
+GO
+
+-- ========================================
+-- PERMISSIONS
+-- ========================================
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'view_bookings', 'See booking list'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'view_bookings');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'manage_bookings', 'Create/check-in/check-out/cancel bookings'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'manage_bookings');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'view_rooms', 'See room list/status'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'view_rooms');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'manage_rooms', 'Change room status'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'manage_rooms');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'view_bills', 'See bills/invoices'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'view_bills');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'manage_bills', 'Generate bills, update payment status'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'manage_bills');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'view_guests', 'See guest list/info'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'view_guests');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'manage_employees', 'Add/edit/remove staff accounts'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'manage_employees');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'manage_roles', 'Edit role permissions'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'manage_roles');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'view_statistics', 'See dashboard stats/analytics'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'view_statistics');
+
+INSERT INTO Permission (PermissionKey, PermissionDesc)
+SELECT 'system_settings', 'Hotel-wide settings'
+WHERE NOT EXISTS (SELECT 1 FROM Permission WHERE PermissionKey = 'system_settings');
+GO
+
+-- ========================================
+-- ROLE-PERMISSION MAPPING
+-- ========================================
+
+-- ADMIN: full access
+INSERT INTO RolePermission (RoleID, PermissionID)
+SELECT r.RoleID, p.PermissionID
+FROM Role r, Permission p
+WHERE r.RoleTitle = 'Admin'
+AND NOT EXISTS (
+SELECT 1
+FROM RolePermission rp
+WHERE rp.RoleID = r.RoleID
+AND rp.PermissionID = p.PermissionID
+);
+
+-- MANAGER
+INSERT INTO RolePermission (RoleID, PermissionID)
+SELECT r.RoleID, p.PermissionID
+FROM Role r CROSS JOIN Permission p
+WHERE r.RoleTitle = 'Manager'
+AND p.PermissionKey IN (
+'view_bookings', 'manage_bookings',
+'view_rooms', 'manage_rooms',
+'view_bills', 'manage_bills',
+'view_guests', 'manage_employees',
+'view_statistics'
+)
+AND NOT EXISTS (
+SELECT 1
+FROM RolePermission rp
+WHERE rp.RoleID = r.RoleID
+AND rp.PermissionID = p.PermissionID
+);
+
+-- RECEPTIONIST
+INSERT INTO RolePermission (RoleID, PermissionID)
+SELECT r.RoleID, p.PermissionID
+FROM Role r CROSS JOIN Permission p
+WHERE r.RoleTitle = 'Receptionist'
+AND p.PermissionKey IN (
+'view_bookings', 'manage_bookings',
+'view_rooms', 'view_guests',
+'view_bills', 'manage_bills'
+)
+AND NOT EXISTS (
+SELECT 1
+FROM RolePermission rp
+WHERE rp.RoleID = r.RoleID
+AND rp.PermissionID = p.PermissionID
+);
+
+-- HOUSEKEEPER
+INSERT INTO RolePermission (RoleID, PermissionID)
+SELECT r.RoleID, p.PermissionID
+FROM Role r CROSS JOIN Permission p
+WHERE r.RoleTitle = 'Housekeeper'
+AND p.PermissionKey IN ('view_rooms', 'manage_rooms')
+AND NOT EXISTS (
+SELECT 1
+FROM RolePermission rp
+WHERE rp.RoleID = r.RoleID
+AND rp.PermissionID = p.PermissionID
+);
+
+-- MAINTENANCE
+INSERT INTO RolePermission (RoleID, PermissionID)
+SELECT r.RoleID, p.PermissionID
+FROM Role r CROSS JOIN Permission p
+WHERE r.RoleTitle = 'Maintenance'
+AND p.PermissionKey IN ('view_rooms', 'manage_rooms')
+AND NOT EXISTS (
+SELECT 1
+FROM RolePermission rp
+WHERE rp.RoleID = r.RoleID
+AND rp.PermissionID = p.PermissionID
+);
+
+-- ACCOUNTANT
+INSERT INTO RolePermission (RoleID, PermissionID)
+SELECT r.RoleID, p.PermissionID
+FROM Role r CROSS JOIN Permission p
+WHERE r.RoleTitle = 'Accountant'
+AND p.PermissionKey IN (
+'view_bills',
+'manage_bills',
+'view_bookings'
+)
+AND NOT EXISTS (
+SELECT 1
+FROM RolePermission rp
+WHERE rp.RoleID = r.RoleID
+AND rp.PermissionID = p.PermissionID
+);
+GO
+
+===== sql/mysql/room.sql =====
+USE hotel_management;
+GO
+
+INSERT INTO Room (RoomNo, RoomType, HotelCode, Occupancy, FloorNo)
+SELECT seed.RoomNo, seed.RoomType, h.HotelCode, seed.Occupancy, seed.FloorNo
+FROM (
+    SELECT '101' AS RoomNo, 'Standard Twin' AS RoomType, 2 AS Occupancy, 1 AS FloorNo
+    UNION ALL SELECT '102', 'Standard Twin', 2, 1
+    UNION ALL SELECT '103', 'Standard Twin', 2, 1
+    UNION ALL SELECT '104', 'Standard Twin', 2, 1
+    UNION ALL SELECT '105', 'Standard Twin', 2, 1
+    UNION ALL SELECT '106', 'Standard Twin', 2, 1
+    UNION ALL SELECT '201', 'Standard Double', 4, 2
+    UNION ALL SELECT '202', 'Standard Double', 4, 2
+    UNION ALL SELECT '203', 'Standard Double', 4, 2
+    UNION ALL SELECT '204', 'Standard Double', 4, 2
+    UNION ALL SELECT '205', 'Standard Double', 4, 2
+    UNION ALL SELECT '206', 'Standard Double', 4, 2
+    UNION ALL SELECT '301', 'Deluxe', 4, 3
+    UNION ALL SELECT '302', 'Deluxe', 4, 3
+    UNION ALL SELECT '303', 'Deluxe', 4, 3
+    UNION ALL SELECT '304', 'Deluxe', 4, 3
+    UNION ALL SELECT '305', 'Deluxe', 4, 3
+    UNION ALL SELECT '306', 'Deluxe', 4, 3
+    UNION ALL SELECT '401', 'Suite', 16, 4
+    UNION ALL SELECT '402', 'Suite', 16, 4
+) AS seed
+INNER JOIN Hotel h ON h.HotelName = 'Grand Palace Hotel';
+
+===== src/middleware/checkPermission.js =====
+const { poolPromise } = require('../config/db');
+
+// Usage: checkPermission('manage_bookings')
+// Expects req.body.employeeId or req.query.employeeId (until real sessions exist)
+function checkPermission(requiredPermission) {
+    return async (req, res, next) => {
+        try {
+            const employeeId = req.body?.employeeId || req.query.employeeId || req.params.employeeId;
+            if (!employeeId) {
+                return res.status(401).json({ message: 'Employee identity required' });
+            }
+
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('EmployeeID', employeeId)
+                .input('PermissionKey', requiredPermission)
+                .query(`
+                    SELECT 1
+                    FROM Employee e
+                    JOIN RolePermission rp ON e.RoleID = rp.RoleID
+                    JOIN Permission p ON rp.PermissionID = p.PermissionID
+                    WHERE e.EmployeeID = @EmployeeID AND p.PermissionKey = @PermissionKey
+                `);
+
+            if (result.recordset.length === 0) {
+                return res.status(403).json({ message: 'Forbidden: insufficient permissions' });
+            }
+
+            next();
+        } catch (error) {
+            console.error("Permission check failed:", error);
+            res.status(500).json({ message: 'Internal Server Error' });
+        }
+    };
+}
+
+module.exports = checkPermission;
+===== src/config/db.js =====
+const sql = require('mssql');
+require('dotenv').config(); // Load cấu hình từ file .env
+
+const config = {
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    server: process.env.DB_SERVER,
+    database: process.env.DB_NAME,
+    options: {
+        encrypt: true,
+        trustServerCertificate: true
+    }
+};
+
+const poolPromise = new sql.ConnectionPool(config)
+    .connect()
+    .then(pool => {
+        console.log('✅ Connected to SQL Server');
+        return pool;
+    })
+    .catch(err => console.log('❌ Database Connection Failed: ', err));
+
+module.exports = {
+    sql, poolPromise
+};
+===== src/server.js =====
+require('dotenv').config();
+const express = require('express');
+const path = require('path');
+const app = express();
+
+// Khởi tạo sẵn kết nối DB để Vai trò 1 (Database) có thể test
+const { poolPromise } = require('./config/db');
+
+app.use(express.json()); // Để đọc được dữ liệu JSON gửi lên
+app.use(express.urlencoded({ extended: true }));
+
+// Phục vụ các file tĩnh trong thư mục public 
+app.use(express.static(path.join(__dirname, '../public')));
+
+const roomRoutes = require('./routes/roomRoutes');
+const authRoutes = require('./routes/authRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const billRoutes = require('./routes/billRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+
+app.use('/api/rooms', roomRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/bills', billRoutes);
+app.use('/api/employees', employeeRoutes);
+
+app.get('/test-db', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query('SELECT * FROM Hotel');
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+});
+
+
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+});
+===== src/utils/seed_staff.js =====
+require('dotenv').config();
+const { poolPromise } = require('../config/db');
+const bcrypt = require('bcryptjs');
+
+async function seedStaff() {
+    try {
+        const pool = await poolPromise;
+        console.log("🚀 Seeding Staff...");
+
+        const hotelResult = await pool.request().query('SELECT TOP 1 HotelCode FROM Hotel');
+        const hotelCode = hotelResult.recordset[0]?.HotelCode;
+
+        if (!hotelCode) {
+            console.log("❌ No Hotel found — run hotel.sql first.");
+            process.exit(1);
+        }
+
+        const staff = [
+            { firstName: 'Hoang', lastName: 'Le', phone: '0900000002', email: 'manager@grandpalace.com', password: 'manager123', salary: 3500.00, role: 'Manager' },
+            { firstName: 'Mai', lastName: 'Pham', phone: '0900000003', email: 'reception@grandpalace.com', password: 'reception123', salary: 1800.00, role: 'Receptionist' },
+            { firstName: 'Linh', lastName: 'Vo', phone: '0900000004', email: 'housekeeping@grandpalace.com', password: 'housekeeping123', salary: 1500.00, role: 'Housekeeper' },
+            { firstName: 'Duc', lastName: 'Tran', phone: '0900000005', email: 'accountant@grandpalace.com', password: 'accountant123', salary: 2200.00, role: 'Accountant' },
+            { firstName: 'Tuan', lastName: 'Nguyen', phone: '0900000006', email: 'maintenance@grandpalace.com', password: 'maintenance123', salary: 1600.00, role: 'Maintenance' },
+        ];
+
+        for (const s of staff) {
+            const roleResult = await pool.request()
+                .input('RoleTitle', s.role)
+                .query('SELECT TOP 1 RoleID FROM Role WHERE RoleTitle = @RoleTitle');
+
+            const roleID = roleResult.recordset[0]?.RoleID;
+            if (!roleID) {
+                console.log(`⚠️ Role '${s.role}' not found, skipping ${s.email}`);
+                continue;
+            }
+
+            const exists = await pool.request()
+                .input('Email', s.email)
+                .query('SELECT EmployeeID FROM Employee WHERE Email = @Email');
+
+            if (exists.recordset.length > 0) {
+                console.log(`⏭️  ${s.email} already exists, skipping`);
+                continue;
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(s.password, salt);
+
+            await pool.request()
+                .input('HotelCode', hotelCode)
+                .input('RoleID', roleID)
+                .input('FirstName', s.firstName)
+                .input('LastName', s.lastName)
+                .input('PhoneNo', s.phone)
+                .input('Email', s.email)
+                .input('Password', hashedPassword)
+                .input('Salary', s.salary)
+                .query(`
+                    INSERT INTO Employee (HotelCode, RoleID, FirstName, LastName, PhoneNo, Email, Password, Salary)
+                    VALUES (@HotelCode, @RoleID, @FirstName, @LastName, @PhoneNo, @Email, @Password, @Salary)
+                `);
+
+            console.log(`✅ Seeded ${s.role}: ${s.email} / ${s.password}`);
+        }
+
+        console.log("✅ Staff seeding completed successfully.");
+        process.exit(0);
+    } catch (error) {
+        console.error("❌ Staff Seeding Failed: ", error);
+        process.exit(1);
+    }
+}
+
+seedStaff();
+===== src/utils/seed_admin.js =====
+require('dotenv').config();
+const { poolPromise } = require('../config/db');
+
+async function seedAdmin() {
+    try {
+        const pool = await poolPromise;
+
+        console.log("Seeding Admin Employee...");
+        
+        // Ensure Hotel exists and get its ID
+        const hotelResult = await pool.request().query('SELECT TOP 1 HotelCode FROM Hotel');
+        const hotelCode = hotelResult.recordset[0]?.HotelCode;
+
+        // Ensure Role exists and get ID of 'Admin'
+        const roleResult = await pool.request().query("SELECT TOP 1 RoleID FROM Role WHERE RoleTitle = 'Admin'");
+        let roleID = roleResult.recordset[0]?.RoleID;
+        
+        if(!roleID) {
+            console.log("Admin role missing, inserting...");
+            const newRole = await pool.request().query("INSERT INTO Role (RoleTitle, RoleDesc) OUTPUT INSERTED.RoleID VALUES ('Admin', 'System Administrator')");
+            roleID = newRole.recordset[0].RoleID;
+        }
+
+        if (hotelCode && roleID) {
+            const bcrypt = require('bcryptjs');
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash('admin123', salt);
+
+            await pool.request()
+                .input('HotelCode', hotelCode)
+                .input('RoleID', roleID)
+                .input('Password', hashedPassword)
+                .query(`
+                IF NOT EXISTS (SELECT * FROM Employee WHERE Email = 'admin@grandpalace.com')
+                BEGIN
+                    INSERT INTO Employee (HotelCode, RoleID, FirstName, LastName, Email, Password, Salary) 
+                    VALUES (@HotelCode, @RoleID, 'System', 'Admin', 'admin@grandpalace.com', @Password, 5000)
+                END
+            `);
+            console.log("✅ Admin Employee seeded Successfully: admin@grandpalace.com / admin123");
+        } else {
+            console.log("❌ Could not resolve HotelCode or RoleID");
+        }
+
+        process.exit(0);
+    } catch (error) {
+        console.error("❌ Seeding Failed: ", error);
+        process.exit(1);
+    }
+}
+
+seedAdmin();
+
+===== src/utils/seed_guest.js =====
+require('dotenv').config();
+const { poolPromise } = require('../config/db');
+const bcrypt = require('bcryptjs');
+
+async function seedGuests() {
+    try {
+        const pool = await poolPromise;
+
+        console.log("🚀 Seeding sample Guests...");
+        const guestDefs = [
+            { firstName: 'John', lastName: 'Doe', email: 'john.doe@example.com', password: 'password123', phone: '0901111111' },
+            { firstName: 'Jane', lastName: 'Smith', email: 'jane.smith@example.com', password: 'password123', phone: '0902222222' },
+            { firstName: 'Carlos', lastName: 'Nguyen', email: 'carlos.nguyen@example.com', password: 'password123', phone: '0903333333' },
+            { firstName: 'Emily', lastName: 'Tran', email: 'emily.tran@example.com', password: 'password123', phone: '0904444444' },
+            { firstName: 'Akira', lastName: 'Yamamoto', email: 'akira.yamamoto@example.com', password: 'password123', phone: '0905555555' },
+        ];
+
+        const guestIds = {};
+
+        for (const g of guestDefs) {
+            const existing = await pool.request()
+                .input('Email', g.email)
+                .query('SELECT GuestID FROM Guest WHERE Email = @Email');
+
+            if (existing.recordset.length > 0) {
+                guestIds[g.email] = existing.recordset[0].GuestID;
+                console.log(`⏭️  ${g.email} already exists, skipping creation`);
+                continue;
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(g.password, salt);
+
+            const result = await pool.request()
+                .input('FirstName', g.firstName)
+                .input('LastName', g.lastName)
+                .input('Email', g.email)
+                .input('Password', hashedPassword)
+                .input('PhoneNo', g.phone)
+                .query(`
+                    INSERT INTO Guest (FirstName, LastName, Email, Password, PhoneNo)
+                    OUTPUT INSERTED.GuestID
+                    VALUES (@FirstName, @LastName, @Email, @Password, @PhoneNo)
+                `);
+
+            guestIds[g.email] = result.recordset[0].GuestID;
+            console.log(`✅ Seeded Guest: ${g.email} / ${g.password}`);
+        }
+
+        // Need rooms + hotel to attach bookings to
+        const hotelResult = await pool.request().query('SELECT TOP 1 HotelCode FROM Hotel');
+        const hotelCode = hotelResult.recordset[0]?.HotelCode;
+        const roomsResult = await pool.request().query('SELECT RoomNo FROM Room ORDER BY CAST(RoomNo AS INT)');
+        const rooms = roomsResult.recordset;
+
+        if (!hotelCode || rooms.length < 6) {
+            console.log("⚠️ Hotel or Rooms not found/insufficient — run hotel.sql and room.sql first. Skipping bookings/bills/reviews.");
+            process.exit(1);
+        }
+
+        console.log("🚀 Seeding sample Bookings...");
+        const bookingDefs = [
+            { guestEmail: 'john.doe@example.com', room: rooms[0].RoomNo, arrival: '2026-05-01', departure: '2026-05-04', adults: 2, children: 0, status: 'CheckedOut' },
+            { guestEmail: 'jane.smith@example.com', room: rooms[1].RoomNo, arrival: '2026-06-10', departure: '2026-06-13', adults: 1, children: 0, status: 'CheckedOut' },
+            { guestEmail: 'carlos.nguyen@example.com', room: rooms[2].RoomNo, arrival: '2026-07-01', departure: '2026-07-05', adults: 2, children: 1, status: 'Confirmed' },
+            { guestEmail: 'emily.tran@example.com', room: rooms[3].RoomNo, arrival: '2026-07-15', departure: '2026-07-18', adults: 4, children: 0, status: 'Confirmed' },
+            { guestEmail: 'akira.yamamoto@example.com', room: rooms[4].RoomNo, arrival: '2026-06-20', departure: '2026-06-22', adults: 2, children: 0, status: 'CheckedIn' },
+            { guestEmail: 'john.doe@example.com', room: rooms[5].RoomNo, arrival: '2026-05-20', departure: '2026-05-22', adults: 2, children: 0, status: 'Cancelled' },
+        ];
+
+        const bookingIds = [];
+
+        for (const b of bookingDefs) {
+            const guestId = guestIds[b.guestEmail];
+            if (!guestId) continue;
+
+            const existing = await pool.request()
+                .input('GuestID', guestId)
+                .input('RoomNo', b.room)
+                .input('ArrivalDate', b.arrival)
+                .query(`
+                    SELECT BookingID, InvoiceNo FROM Booking
+                    WHERE GuestID = @GuestID AND RoomNo = @RoomNo AND ArrivalDate = @ArrivalDate
+                `);
+
+            if (existing.recordset.length > 0) {
+                bookingIds.push({ ...existing.recordset[0], status: b.status, guestId });
+                console.log(`⏭️  Booking for ${b.guestEmail} on ${b.arrival} already exists, skipping`);
+                continue;
+            }
+
+            const result = await pool.request()
+                .input('HotelCode', hotelCode)
+                .input('GuestID', guestId)
+                .input('RoomNo', b.room)
+                .input('BookingDate', b.arrival)
+                .input('ArrivalDate', b.arrival)
+                .input('DepartureDate', b.departure)
+                .input('NumAdults', b.adults)
+                .input('NumChildren', b.children)
+                .input('BookingStatus', b.status)
+                .query(`
+                    INSERT INTO Booking (HotelCode, GuestID, RoomNo, BookingDate, ArrivalDate, DepartureDate, NumAdults, NumChildren, BookingStatus)
+                    OUTPUT INSERTED.BookingID, INSERTED.InvoiceNo
+                    VALUES (@HotelCode, @GuestID, @RoomNo, @BookingDate, @ArrivalDate, @DepartureDate, @NumAdults, @NumChildren, @BookingStatus)
+                `);
+
+            bookingIds.push({ ...result.recordset[0], status: b.status, guestId });
+            console.log(`✅ Seeded Booking: ${b.guestEmail} → Room ${b.room} (${b.status})`);
+        }
+
+        console.log("🚀 Seeding sample Bills...");
+        const checkedOutBookings = bookingIds.filter(b => b.status === 'CheckedOut' && !b.InvoiceNo);
+        const billInvoices = [];
+
+        for (const booking of checkedOutBookings) {
+            const billResult = await pool.request()
+                .input('GuestID', booking.guestId)
+                .query(`
+                    INSERT INTO Bill (GuestID, TotalAmount, RoomService, IfLateCheckout, PaymentDate, PaymentMode, PaymentStatus)
+                    OUTPUT INSERTED.InvoiceNo
+                    VALUES (@GuestID, 355.00, 30.00, 0, GETDATE(), 'CreditCard', 'Paid')
+                `);
+
+            const invoiceNo = billResult.recordset[0].InvoiceNo;
+
+            await pool.request()
+                .input('BookingID', booking.BookingID)
+                .input('InvoiceNo', invoiceNo)
+                .query('UPDATE Booking SET InvoiceNo = @InvoiceNo WHERE BookingID = @BookingID');
+
+            billInvoices.push({ invoiceNo, guestId: booking.guestId });
+            console.log(`✅ Seeded Bill: InvoiceNo ${invoiceNo} for BookingID ${booking.BookingID}`);
+        }
+
+        console.log("🚀 Seeding sample Reviews...");
+        const reviewComments = [
+            'Excellent stay and service.',
+            'Very comfortable room, would come back again.',
+        ];
+
+        for (let i = 0; i < billInvoices.length; i++) {
+            const { invoiceNo, guestId } = billInvoices[i];
+
+            const existing = await pool.request()
+                .input('InvoiceNo', invoiceNo)
+                .query('SELECT ReviewID FROM Review WHERE InvoiceNo = @InvoiceNo');
+
+            if (existing.recordset.length > 0) {
+                console.log(`⏭️  Review for InvoiceNo ${invoiceNo} already exists, skipping`);
+                continue;
+            }
+
+            await pool.request()
+                .input('GuestID', guestId)
+                .input('InvoiceNo', invoiceNo)
+                .input('Rating', 5)
+                .input('Comment', reviewComments[i % reviewComments.length])
+                .query(`
+                    INSERT INTO Review (GuestID, InvoiceNo, Rating, Comment)
+                    VALUES (@GuestID, @InvoiceNo, @Rating, @Comment)
+                `);
+
+            console.log(`✅ Seeded Review for InvoiceNo ${invoiceNo}`);
+        }
+
+        console.log("✅ Guest + Booking + Bill + Review seeding completed successfully.");
+        process.exit(0);
+    } catch (error) {
+        console.error("❌ Guest seeding failed: ", error);
+        process.exit(1);
+    }
+}
+
+seedGuests();
+===== src/models/bookingModel.js =====
+const { poolPromise } = require('../config/db');
+
+class BookingModel {
+    static async getAllBookings() {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request().query(`
+                SELECT 
+                    b.BookingID, 
+                    b.InvoiceNo, 
+                    g.FirstName + ' ' + g.LastName AS GuestName, 
+                    g.Email AS GuestEmail,
+                    g.PhoneNo AS GuestPhone,
+                    r.RoomType, 
+                    b.RoomNo,
+                    b.ArrivalDate, 
+                    b.DepartureDate, 
+                    b.BookingStatus,
+                    b.NumAdults, 
+                    b.NumChildren, 
+                    b.SpecialReq
+                FROM Booking b
+                INNER JOIN Guest g ON b.GuestID = g.GuestID
+                INNER JOIN Room r ON b.RoomNo = r.RoomNo
+                ORDER BY b.BookingID DESC
+            `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async createBooking(guestID, roomType, arrivalDate, departureDate) {
+        try {
+            const pool = await poolPromise;
+            
+            // Find a room of this type that is NOT booked during these dates
+            const roomQuery = await pool.request()
+                .input('RoomType', roomType)
+                .input('ArrivalDate', arrivalDate)
+                .input('DepartureDate', departureDate)
+                .query(`
+                    SELECT TOP 1 RoomNo, HotelCode 
+                    FROM Room 
+                    WHERE RoomType = @RoomType
+                    AND RoomNo NOT IN (
+                        SELECT RoomNo FROM Booking 
+                        WHERE ArrivalDate < @DepartureDate AND DepartureDate > @ArrivalDate
+                    )
+                `);
+
+            if (roomQuery.recordset.length === 0) {
+                throw new Error('No rooms available for this type during the selected dates.');
+            }
+
+            const roomNo = roomQuery.recordset[0].RoomNo;
+            const hotelCode = roomQuery.recordset[0].HotelCode;
+
+            // Insert Booking
+            const result = await pool.request()
+                .input('HotelCode', hotelCode)
+                .input('GuestID', guestID)
+                .input('RoomNo', roomNo)
+                .input('BookingDate', new Date())
+                .input('ArrivalDate', arrivalDate)
+                .input('DepartureDate', departureDate)
+                .query(`
+                    INSERT INTO Booking (HotelCode, GuestID, RoomNo, BookingDate, ArrivalDate, DepartureDate)
+                    OUTPUT INSERTED.BookingID
+                    VALUES (@HotelCode, @GuestID, @RoomNo, @BookingDate, @ArrivalDate, @DepartureDate)
+                `);
+
+            return result.recordset[0];
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async updateBookingStatus(invoiceNo, status) {
+        try {
+            const pool = await poolPromise;
+            
+            // Start a transaction since we are updating both Booking and Room tables
+            const transaction = pool.transaction();
+            await transaction.begin();
+            
+            try {
+                // Update Bookings by InvoiceNo
+                const result = await transaction.request()
+                    .input('InvoiceNo', invoiceNo)
+                    .input('Status', status)
+                    .query(`
+                        UPDATE Booking
+                        SET BookingStatus = @Status
+                        WHERE InvoiceNo = @InvoiceNo
+                    `);
+                    
+                // Auto-update Room Status based on Check-in/Check-out/Cancel
+                let roomStatus = null;
+                if (status === 'CheckedIn') roomStatus = 'Occupied';
+                else if (status === 'CheckedOut') roomStatus = 'Cleaning';
+                else if (status === 'Cancelled') roomStatus = 'Available';
+                
+                if (roomStatus) {
+                    await transaction.request()
+                        .input('InvoiceNo', invoiceNo)
+                        .input('RoomStatus', roomStatus)
+                        .query(`
+                            UPDATE Room 
+                            SET RoomStatus = @RoomStatus 
+                            WHERE RoomNo IN (SELECT RoomNo FROM Booking WHERE InvoiceNo = @InvoiceNo)
+                        `);
+                }
+                
+                await transaction.commit();
+                return result.rowsAffected[0] > 0;
+            } catch (err) {
+                await transaction.rollback();
+                throw err;
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getBookingStatistics() {
+        try {
+            const pool = await poolPromise;
+            // Get stats for current month as an example.
+            const result = await pool.request().query(`
+                SELECT 
+                    COUNT(DISTINCT InvoiceNo) as TotalBookings,
+                    SUM(CASE WHEN BookingStatus = 'Cancelled' THEN 1 ELSE 0 END) as Cancelled,
+                    SUM(CASE WHEN BookingStatus = 'CheckedIn' THEN 1 ELSE 0 END) as CheckedIn,
+                    SUM(CASE WHEN BookingStatus = 'CheckedOut' THEN 1 ELSE 0 END) as CheckedOut,
+                    (SELECT ISNULL(SUM(TotalAmount), 0) FROM Bill 
+                     WHERE MONTH(PaymentDate) = MONTH(GETDATE()) 
+                       AND YEAR(PaymentDate) = YEAR(GETDATE()) 
+                       AND PaymentStatus = 'Paid') as TotalRevenue
+                FROM Booking
+                WHERE MONTH(BookingDate) = MONTH(GETDATE()) 
+                  AND YEAR(BookingDate) = YEAR(GETDATE())
+            `);
+            const row = result.recordset[0];
+            const total = row.TotalBookings || 0;
+            const cancelled = row.Cancelled || 0;
+            const rate = total > 0 ? Math.round((cancelled / total) * 100) : 0;
+            
+            return {
+                TotalBookings: total,
+                Cancelled: cancelled,
+                CheckedIn: row.CheckedIn || 0,
+                CheckedOut: row.CheckedOut || 0,
+                CancellationRate: rate,
+                TotalRevenue: row.TotalRevenue || 0
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async createBookingOrder(guestID, comboParts, arrivalDate, departureDate, numAdults, numChildren, specialReq) {
+        try {
+            const pool = await poolPromise;
+            const transaction = pool.transaction();
+            await transaction.begin();
+
+            try {
+                // 1. Create Bill immediately to get InvoiceNo
+                const billResult = await transaction.request()
+                    .input('GuestID', guestID)
+                    .query(`
+                        INSERT INTO Bill (GuestID, TotalAmount, PaymentStatus)
+                        OUTPUT INSERTED.InvoiceNo
+                        VALUES (@GuestID, 0, 'Unpaid')
+                    `);
+                const invoiceNo = billResult.recordset[0].InvoiceNo;
+
+                // 2. Iterate and create bookings for each room requested
+                for (let part of comboParts) {
+                    for (let i = 0; i < part.count; i++) {
+                        const roomQuery = await transaction.request()
+                            .input('RoomType', part.type)
+                            .input('ArrivalDate', arrivalDate)
+                            .input('DepartureDate', departureDate)
+                            .query(`
+                                SELECT TOP 1 RoomNo, HotelCode 
+                                FROM Room 
+                                WHERE RoomType = @RoomType
+                                AND RoomNo NOT IN (
+                                    SELECT RoomNo FROM Booking 
+                                    WHERE ArrivalDate < @DepartureDate AND DepartureDate > @ArrivalDate
+                                      AND BookingStatus != 'Cancelled'
+                                )
+                            `);
+
+                        if (roomQuery.recordset.length === 0) {
+                            throw new Error(`Not enough ${part.type} rooms available.`);
+                        }
+
+                        const roomNo = roomQuery.recordset[0].RoomNo;
+                        const hotelCode = roomQuery.recordset[0].HotelCode;
+
+                        await transaction.request()
+                            .input('HotelCode', hotelCode)
+                            .input('GuestID', guestID)
+                            .input('RoomNo', roomNo)
+                            .input('InvoiceNo', invoiceNo)
+                            .input('ArrivalDate', arrivalDate)
+                            .input('DepartureDate', departureDate)
+                            .input('NumAdults', numAdults)
+                            .input('NumChildren', numChildren)
+                            .input('SpecialReq', specialReq || null)
+                            .query(`
+                                INSERT INTO Booking (HotelCode, GuestID, RoomNo, InvoiceNo, BookingDate, BookingTime, ArrivalDate, DepartureDate, NumAdults, NumChildren, SpecialReq, BookingStatus)
+                                VALUES (@HotelCode, @GuestID, @RoomNo, @InvoiceNo, CAST(GETDATE() AS DATE), CAST(GETDATE() AS TIME), @ArrivalDate, @DepartureDate, @NumAdults, @NumChildren, @SpecialReq, 'Pending')
+                            `);
+                    }
+                }
+
+                // 3. Update Bill TotalAmount
+                await transaction.request()
+                    .input('InvoiceNo', invoiceNo)
+                    .query(`
+                        DECLARE @TotalAmount DECIMAL(18,2);
+                        SELECT @TotalAmount = SUM(rt.RoomPrice * CASE WHEN DATEDIFF(day, b.ArrivalDate, b.DepartureDate) = 0 THEN 1 ELSE DATEDIFF(day, b.ArrivalDate, b.DepartureDate) END)
+                        FROM Booking b
+                        INNER JOIN Room r ON b.RoomNo = r.RoomNo
+                        INNER JOIN RoomType rt ON r.RoomType = rt.RoomType
+                        WHERE b.InvoiceNo = @InvoiceNo;
+
+                        IF @TotalAmount IS NULL SET @TotalAmount = 0;
+
+                        UPDATE Bill 
+                        SET TotalAmount = @TotalAmount
+                        WHERE InvoiceNo = @InvoiceNo;
+                    `);
+
+                await transaction.commit();
+                return invoiceNo;
+            } catch (err) {
+                await transaction.rollback();
+                throw err;
+            }
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getBookingsByGuest(guestId) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('GuestID', guestId)
+                .query(`
+                    SELECT b.BookingID, b.RoomNo, r.RoomType, b.ArrivalDate, b.DepartureDate, b.BookingStatus, b.BookingDate, b.InvoiceNo, bill.PaymentStatus, bill.TotalAmount
+                    FROM Booking b
+                    INNER JOIN Room r ON b.RoomNo = r.RoomNo
+                    LEFT JOIN Bill bill ON b.InvoiceNo = bill.InvoiceNo
+                    WHERE b.GuestID = @GuestID
+                    ORDER BY b.ArrivalDate DESC, b.BookingID DESC
+                `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async cancelBooking(bookingId, guestId) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('BookingID', bookingId)
+                .input('GuestID', guestId)
+                .query(`
+                    UPDATE Booking
+                    SET BookingStatus = 'Cancelled'
+                    WHERE BookingID = @BookingID 
+                      AND GuestID = @GuestID 
+                      AND (BookingStatus IS NULL OR (BookingStatus NOT IN ('Cancelled', 'CheckedIn', 'CheckedOut')))
+                `);
+            return result.rowsAffected[0] > 0;
+        } catch (error) {
+            throw error;
+        }
+    }
+    static async createWalkInBooking(data) {
+        const pool = await poolPromise;
+        const transaction = pool.transaction();
+
+        await transaction.begin();
+
+        try {
+
+            const billResult =
+                await transaction.request()
+                .input('GuestID', data.guestId)
+                .query(`
+                    INSERT INTO Bill
+                    (
+                        GuestID,
+                        TotalAmount,
+                        PaymentStatus
+                    )
+                    OUTPUT INSERTED.InvoiceNo
+                    VALUES
+                    (
+                        @GuestID,
+                        0,
+                        'Unpaid'
+                    )
+                `);
+
+            const invoiceNo =
+                billResult.recordset[0].InvoiceNo;
+
+            await transaction.request()
+                .input('HotelCode', data.hotelCode)
+                .input('GuestID', data.guestId)
+                .input('RoomNo', data.roomNo)
+                .input('InvoiceNo', invoiceNo)
+                .input('ArrivalDate', data.arrivalDate)
+                .input('DepartureDate', data.departureDate)
+                .input('NumAdults', data.adults)
+                .input('NumChildren', data.children)
+                .input(
+                    'BookingStatus',
+                    data.checkInNow
+                        ? 'CheckedIn'
+                        : 'Confirmed'
+                )
+                .query(`
+                    INSERT INTO Booking
+                    (
+                        HotelCode,
+                        GuestID,
+                        RoomNo,
+                        InvoiceNo,
+                        BookingDate,
+                        BookingTime,
+                        ArrivalDate,
+                        DepartureDate,
+                        NumAdults,
+                        NumChildren,
+                        BookingStatus
+                    )
+                    VALUES
+                    (
+                        @HotelCode,
+                        @GuestID,
+                        @RoomNo,
+                        @InvoiceNo,
+                        CAST(GETDATE() AS DATE),
+                        CAST(GETDATE() AS TIME),
+                        @ArrivalDate,
+                        @DepartureDate,
+                        @NumAdults,
+                        @NumChildren,
+                        @BookingStatus
+                    )
+                `);
+
+            if (data.checkInNow) {
+                await transaction.request()
+                    .input('RoomNo', data.roomNo)
+                    .query(`
+                        UPDATE Room
+                        SET RoomStatus='Occupied'
+                        WHERE RoomNo=@RoomNo
+                    `);
+            }
+
+            await transaction.commit();
+
+            return {
+                invoiceNo
+            };
+
+        } catch (err) {
+            await transaction.rollback();
+            throw err;
+        }
+    }
+}
+
+module.exports = BookingModel;
+
+===== src/models/billModel.js =====
+const { poolPromise } = require('../config/db');
+
+class BillModel {
+    static async getBillsByGuest(guestId) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('GuestID', guestId)
+                .query(`
+                    SELECT 
+                        b.InvoiceNo, 
+                        b.TotalAmount, 
+                        b.PaymentDate, 
+                        b.PaymentMode, 
+                        b.PaymentStatus,
+                        STRING_AGG(bk.RoomNo, ', ') as RoomNo,
+                        r.Rating,
+                        r.Comment
+                    FROM Bill b
+                    INNER JOIN Booking bk ON b.InvoiceNo = bk.InvoiceNo
+                    LEFT JOIN Review r ON b.InvoiceNo = r.InvoiceNo
+                    WHERE b.GuestID = @GuestID
+                    GROUP BY b.InvoiceNo, b.TotalAmount, b.PaymentDate, b.PaymentMode, b.PaymentStatus, r.Rating, r.Comment
+                    ORDER BY b.InvoiceNo DESC
+                `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async payInvoice(invoiceNo, paymentMode) {
+        try {
+            const pool = await poolPromise;
+
+            const result = await pool.request()
+                .input('InvoiceNo', invoiceNo)
+                .input('PaymentMode', paymentMode)
+                .query(`
+                    DECLARE @TotalAmount DECIMAL(18,2);
+                    
+                    SELECT @TotalAmount = SUM(rt.RoomPrice * CASE WHEN DATEDIFF(day, b.ArrivalDate, b.DepartureDate) = 0 THEN 1 ELSE DATEDIFF(day, b.ArrivalDate, b.DepartureDate) END)
+                    FROM Booking b
+                    INNER JOIN Room r ON b.RoomNo = r.RoomNo
+                    INNER JOIN RoomType rt ON r.RoomType = rt.RoomType
+                    WHERE b.InvoiceNo = @InvoiceNo;
+
+                    IF @TotalAmount IS NULL SET @TotalAmount = 0;
+
+                    UPDATE Bill 
+                    SET TotalAmount = @TotalAmount, PaymentStatus = 'Paid', PaymentDate = GETDATE(), PaymentMode = @PaymentMode
+                    WHERE InvoiceNo = @InvoiceNo;
+
+                    UPDATE Booking 
+                    SET BookingStatus = 'CheckedOut'
+                    WHERE InvoiceNo = @InvoiceNo;
+                `);
+            
+            return { success: true };
+        } catch (error) {
+            throw error;
+        }
+    }
+    static async getAllBills() {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request().query(`
+                SELECT 
+                    b.InvoiceNo,
+                    g.FirstName + ' ' + g.LastName AS GuestName,
+                    b.TotalAmount,
+                    b.PaymentDate,
+                    b.PaymentMode,
+                    b.PaymentStatus,
+                    STRING_AGG(bk.RoomNo, ', ') as RoomNo
+                FROM Bill b
+                INNER JOIN Guest g ON b.GuestID = g.GuestID
+                LEFT JOIN Booking bk ON b.InvoiceNo = bk.InvoiceNo
+                GROUP BY b.InvoiceNo, g.FirstName, g.LastName, b.TotalAmount, b.PaymentDate, b.PaymentMode, b.PaymentStatus
+                ORDER BY b.InvoiceNo DESC
+            `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
+module.exports = BillModel;
+
+===== src/models/guestModel.js =====
+const { poolPromise } = require('../config/db');
+
+const bcrypt = require('bcryptjs');
+
+class GuestModel {
+    static async register(firstName, lastName, email, password, phoneNo = '') {
+        try {
+            const pool = await poolPromise;
+            // Basic validation
+            const check = await pool.request()
+                .input('Email', email)
+                .query('SELECT GuestID FROM Guest WHERE Email = @Email');
+            
+            if (check.recordset.length > 0) {
+                throw new Error('Email already exists');
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+
+            const result = await pool.request()
+                .input('FirstName', firstName)
+                .input('LastName', lastName)
+                .input('Email', email)
+                .input('Password', hashedPassword)
+                .input('PhoneNo', phoneNo)
+                .query(`
+                    INSERT INTO Guest (FirstName, LastName, Email, Password, PhoneNo)
+                    OUTPUT INSERTED.GuestID, INSERTED.Email, INSERTED.FirstName, INSERTED.LastName, INSERTED.PhoneNo, INSERTED.DOB, INSERTED.Gender, INSERTED.PassportNo
+                    VALUES (@FirstName, @LastName, @Email, @Password, @PhoneNo)
+                `);
+
+            return result.recordset[0];
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async login(email, password) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('Email', email)
+                .query('SELECT GuestID, FirstName, LastName, Email, Password, PhoneNo, DOB, Gender, PassportNo FROM Guest WHERE Email = @Email');
+            
+            if (result.recordset.length === 0) {
+                return null;
+            }
+            
+            const guest = result.recordset[0];
+            const isValid = await bcrypt.compare(password, guest.Password);
+            if (!isValid) return null;
+
+            delete guest.Password;
+            return guest;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async updateGuest(guestId, data) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('GuestID', guestId)
+                .input('FirstName', data.FirstName)
+                .input('LastName', data.LastName)
+                .input('PhoneNo', data.PhoneNo || '')
+                .input('DOB', data.DOB || null)
+                .input('Gender', data.Gender || '')
+                .input('PassportNo', data.PassportNo || '')
+                .query(`
+                    UPDATE Guest
+                    SET FirstName = @FirstName,
+                        LastName = @LastName,
+                        PhoneNo = @PhoneNo,
+                        DOB = @DOB,
+                        Gender = @Gender,
+                        PassportNo = @PassportNo
+                    OUTPUT INSERTED.GuestID, INSERTED.Email, INSERTED.FirstName, INSERTED.LastName, INSERTED.PhoneNo, INSERTED.DOB, INSERTED.Gender, INSERTED.PassportNo
+                    WHERE GuestID = @GuestID
+                `);
+            
+            if (result.recordset.length === 0) {
+                throw new Error('Guest not found');
+            }
+            return result.recordset[0];
+        } catch (error) {
+            throw error;
+        }
+    }
+    static async createWalkInGuest(data) {
+        const pool = await poolPromise;
+
+        const existing = await pool.request()
+            .input('PhoneNo', data.phoneNo)
+            .input('Email', data.email || null)
+            .query(`
+                SELECT TOP 1 *
+                FROM Guest
+                WHERE PhoneNo = @PhoneNo
+                OR (@Email IS NOT NULL AND Email = @Email)
+            `);
+
+        if (existing.recordset.length > 0) {
+            return {
+                existing: true,
+                guest: existing.recordset[0]
+            };
+        }
+
+        const bcrypt = require('bcryptjs');
+
+        const tempPassword =
+            Math.random().toString(36).slice(-8) + 'A1!';
+
+        const hashedPassword =
+            await bcrypt.hash(tempPassword, 10);
+
+        const result = await pool.request()
+            .input('FirstName', data.firstName)
+            .input('LastName', data.lastName)
+            .input('PhoneNo', data.phoneNo)
+            .input('Email', data.email || null)
+            .input('PassportNo', data.passportNo || null)
+            .input('Password', hashedPassword)
+            .query(`
+                INSERT INTO Guest
+                (
+                    FirstName,
+                    LastName,
+                    PhoneNo,
+                    Email,
+                    PassportNo,
+                    Password
+                )
+                OUTPUT INSERTED.*
+                VALUES
+                (
+                    @FirstName,
+                    @LastName,
+                    @PhoneNo,
+                    @Email,
+                    @PassportNo,
+                    @Password
+                )
+            `);
+
+        return {
+            existing: false,
+            guest: result.recordset[0],
+            tempPassword
+        };
+    }
+}
+
+module.exports = GuestModel;
+
+===== src/models/reviewModel.js =====
+const { poolPromise } = require('../config/db');
+
+class ReviewModel {
+    static async createReview(guestId, invoiceNo, rating, comment) {
+        try {
+            const pool = await poolPromise;
+
+            // Check if already reviewed
+            const checkQuery = await pool.request()
+                .input('InvoiceNo', invoiceNo)
+                .query(`SELECT * FROM Review WHERE InvoiceNo = @InvoiceNo`);
+
+            if (checkQuery.recordset.length > 0) {
+                throw new Error('You have already reviewed this invoice.');
+            }
+
+            const result = await pool.request()
+                .input('GuestID', guestId)
+                .input('InvoiceNo', invoiceNo)
+                .input('Rating', rating)
+                .input('Comment', comment)
+                .query(`
+                    INSERT INTO Review (GuestID, InvoiceNo, Rating, Comment, ReviewDate)
+                    OUTPUT INSERTED.ReviewID
+                    VALUES (@GuestID, @InvoiceNo, @Rating, @Comment, GETDATE())
+                `);
+            return result.recordset[0];
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getLatestReviews(limit = 5) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('Limit', limit)
+                .query(`
+                    SELECT TOP (@Limit) r.ReviewID, r.Rating, r.Comment, r.ReviewDate, g.FirstName, g.LastName
+                    FROM Review r
+                    INNER JOIN Guest g ON r.GuestID = g.GuestID
+                    ORDER BY r.ReviewDate DESC, r.ReviewID DESC
+                `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getAverageRating() {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request().query(`
+                SELECT ROUND(AVG(CAST(Rating AS FLOAT)), 1) as AvgRating 
+                FROM Review
+            `);
+            return result.recordset[0];
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
+module.exports = ReviewModel;
+
+===== src/models/employeeModel.js =====
+const { poolPromise } = require('../config/db');
+
+const bcrypt = require('bcryptjs');
+
+class EmployeeModel {
+    static async login(email, password) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('Email', email)
+                .query(`
+                    SELECT e.EmployeeID, e.FirstName, e.LastName, e.Email, e.Password, e.RoleID, r.RoleTitle 
+                    FROM Employee e
+                    INNER JOIN Role r ON e.RoleID = r.RoleID
+                    WHERE e.Email = @Email
+                `);
+            
+            if (result.recordset.length === 0) {
+                return null;
+            }
+            
+            const employee = result.recordset[0];
+            const isValid = await bcrypt.compare(password, employee.Password);
+            if (!isValid) return null;
+
+            delete employee.Password;
+
+            // Fetch RBAC Permissions
+            const permResult = await pool.request()
+                .input('RoleID', employee.RoleID)
+                .query(`
+                    SELECT p.PermissionKey
+                    FROM RolePermission rp
+                    JOIN Permission p ON rp.PermissionID = p.PermissionID
+                    WHERE rp.RoleID = @RoleID
+                `);
+            
+            employee.Permissions = permResult.recordset.map(p => p.PermissionKey);
+
+            return employee;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getAllEmployees() {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request().query(`
+                SELECT e.EmployeeID, e.FirstName, e.LastName, e.Email, r.RoleTitle 
+                FROM Employee e
+                INNER JOIN Role r ON e.RoleID = r.RoleID
+                ORDER BY e.EmployeeID DESC
+            `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async createEmployee(hotelCode, roleId, firstName, lastName, email, hashedPassword) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('HotelCode', hotelCode)
+                .input('RoleID', roleId)
+                .input('FirstName', firstName)
+                .input('LastName', lastName)
+                .input('Email', email)
+                .input('Password', hashedPassword)
+                .query(`
+                    INSERT INTO Employee (HotelCode, RoleID, FirstName, LastName, Email, Password, Salary)
+                    OUTPUT INSERTED.EmployeeID
+                    VALUES (@HotelCode, @RoleID, @FirstName, @LastName, @Email, @Password, 0)
+                `);
+            return result.recordset[0];
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async deleteEmployee(employeeId) {
+        try {
+            const pool = await poolPromise;
+            await pool.request()
+                .input('EmployeeID', employeeId)
+                .query(`
+                    DELETE FROM Employee WHERE EmployeeID = @EmployeeID
+                `);
+            return true;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async getAllRoles() {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request().query(`
+                SELECT RoleID, RoleTitle FROM Role
+            `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
+module.exports = EmployeeModel;
+
+===== src/models/roomModel.js =====
+const { poolPromise } = require('../config/db');
+
+class RoomModel {
+    static async getAllRooms() {
+        try {
+            const pool = await poolPromise;
+            // JOIN Room and RoomType to get complete info
+            const result = await pool.request().query(`
+                SELECT r.RoomNo, r.Occupancy, rt.RoomType, rt.RoomPrice, rt.RoomImg, rt.RoomDesc, h.HotelName
+                FROM Room r
+                INNER JOIN RoomType rt ON r.RoomType = rt.RoomType
+                INNER JOIN Hotel h ON r.HotelCode = h.HotelCode
+            `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async searchRooms(arrivalDate, departureDate, guests, numRooms) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('ArrivalDate', arrivalDate)
+                .input('DepartureDate', departureDate)
+                .query(`
+                    SELECT r.RoomType, rt.RoomPrice, rt.RoomImg, rt.RoomDesc, r.Occupancy, COUNT(r.RoomNo) as AvailableCount
+                    FROM Room r
+                    INNER JOIN RoomType rt ON r.RoomType = rt.RoomType
+                    WHERE r.RoomNo NOT IN (
+                        SELECT RoomNo FROM Booking 
+                        WHERE (ArrivalDate < @DepartureDate AND DepartureDate > @ArrivalDate)
+                    )
+                    GROUP BY r.RoomType, rt.RoomPrice, rt.RoomImg, rt.RoomDesc, r.Occupancy
+                `);
+            
+            const availableRooms = result.recordset;
+            let combinations = [];
+
+            function backtrack(index, currentCombo, currentOccupancy, currentPrice) {
+                if (currentOccupancy >= guests) {
+                    combinations.push({
+                        rooms: currentCombo.map(r => ({ ...r })),
+                        totalOccupancy: currentOccupancy,
+                        totalPrice: currentPrice
+                    });
+                    return;
+                }
+
+                if (index >= availableRooms.length) return;
+
+                const room = availableRooms[index];
+                const currentTotalRooms = currentCombo.reduce((sum, r) => sum + r.count, 0);
+                if (currentTotalRooms >= 5) return;
+
+                for (let count = 0; count <= room.AvailableCount; count++) {
+                    if (currentTotalRooms + count > 5) break;
+                    
+                    if (count > 0) {
+                        currentCombo.push({ ...room, count });
+                    }
+                    
+                    backtrack(index + 1, currentCombo, currentOccupancy + (count * room.Occupancy), currentPrice + (count * room.RoomPrice));
+                    
+                    if (count > 0) {
+                        currentCombo.pop();
+                    }
+                }
+            }
+
+            backtrack(0, [], 0, 0);
+
+            // Filter out non-minimal combinations
+            combinations = combinations.filter(combo => {
+                for (let r of combo.rooms) {
+                    if (combo.totalOccupancy - r.Occupancy >= guests) {
+                        return false; // Can drop a room and still satisfy guests
+                    }
+                }
+                return true;
+            });
+
+            combinations.sort((a, b) => a.totalPrice - b.totalPrice);
+            
+            return combinations.slice(0, 10).map(c => ({
+                isCombo: true,
+                comboString: c.rooms.map(r => r.RoomType + ':' + r.count).join(','),
+                comboName: c.rooms.map(r => r.count + ' x ' + r.RoomType).join(' + '),
+                RoomType: c.rooms[0].RoomType, // Fallback
+                RoomDesc: c.rooms.length > 1 ? 'Gói kết hợp nhiều phòng để đáp ứng đủ số lượng khách của bạn với chi phí tối ưu nhất.' : c.rooms[0].RoomDesc,
+                RoomImg: c.rooms[0].RoomImg,
+                totalPrice: c.totalPrice,
+                Occupancy: c.totalOccupancy,
+                roomsNeeded: 1, 
+                AvailableCount: 99
+            }));
+        } catch (error) {
+            throw error;
+        }
+    }
+    static async getAllRoomsWithStatus() {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request().query(`
+                SELECT r.RoomNo, r.RoomType, r.Occupancy, r.FloorNo, ISNULL(r.RoomStatus, 'Available') AS RoomStatus, rt.RoomPrice
+                FROM Room r
+                INNER JOIN RoomType rt ON r.RoomType = rt.RoomType
+                ORDER BY r.FloorNo, r.RoomNo
+            `);
+            return result.recordset;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    static async updateRoomStatus(roomNo, status) {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request()
+                .input('RoomNo', roomNo)
+                .input('Status', status)
+                .query(`
+                    UPDATE Room SET RoomStatus = @Status WHERE RoomNo = @RoomNo
+                `);
+            return result.rowsAffected[0] > 0;
+        } catch (error) {
+            throw error;
+        }
+    }
+}
+
+module.exports = RoomModel;
+
+===== src/controllers/bookingController.js =====
+const BookingModel = require('../models/bookingModel');
+const GuestModel = require('../models/guestModel');
+
+exports.getAllBookings = async (req, res) => {
+    try {
+        const bookings = await BookingModel.getAllBookings();
+        res.status(200).json(bookings);
+    } catch (error) {
+        console.error("Error fetching bookings:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.createBookingOrder = async (req, res) => {
+    try {
+        const { guestId, comboParts, arrivalDate, departureDate, numAdults, numChildren, specialReq } = req.body;
+        
+        if (!guestId || !comboParts || !arrivalDate || !departureDate) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        const invoiceNo = await BookingModel.createBookingOrder(guestId, comboParts, arrivalDate, departureDate, numAdults, numChildren, specialReq);
+        res.status(201).json({ message: 'Booking order created successfully', invoiceNo: invoiceNo });
+    } catch (error) {
+        console.error("Error creating booking order:", error);
+        res.status(500).json({ message: error.message || 'Internal Server Error' });
+    }
+};
+
+exports.createBooking = async (req, res) => {
+    try {
+        const { guestId, roomType, arrivalDate, departureDate } = req.body;
+        
+        if (!guestId || !roomType || !arrivalDate || !departureDate) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        const newBooking = await BookingModel.createBooking(guestId, roomType, arrivalDate, departureDate);
+        res.status(201).json({ message: 'Booking created successfully', bookingId: newBooking.BookingID });
+    } catch (error) {
+        console.error("Error creating booking:", error);
+        if (error.message === 'No rooms available for this type.') {
+            return res.status(404).json({ message: error.message });
+        }
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.createWalkInBooking = async (req,res)=>{
+    try{
+
+        const guestInfo = await GuestModel.createWalkInGuest({
+            firstName:req.body.firstName,
+            lastName:req.body.lastName,
+            phoneNo:req.body.phoneNo,
+            email:req.body.email,
+            passportNo:req.body.passportNo
+        });
+
+        const booking =
+            await BookingModel.createWalkInBooking({
+                guestId: guestInfo.guest.GuestID,
+                hotelCode:req.body.hotelCode,
+                roomNo:req.body.roomNo,
+                arrivalDate:req.body.arrivalDate,
+                departureDate:req.body.departureDate,
+                adults:req.body.adults,
+                children:req.body.children,
+                checkInNow:req.body.checkInNow
+            });
+
+        res.status(201).json({
+            success:true,
+            guestId:guestInfo.guest.GuestID,
+            invoiceNo:booking.invoiceNo,
+            generatedPassword:
+                guestInfo.existing
+                    ? null
+                    : guestInfo.tempPassword
+        });
+
+    } catch(error){
+        console.error(error);
+        res.status(500).json({
+            message:error.message
+        });
+    }
+};
+
+exports.updateBookingStatus = async (req, res) => {
+    try {
+        const bookingId = req.params.id;
+        const { status } = req.body;
+        if (!status) {
+            return res.status(400).json({ message: 'Status is required' });
+        }
+        const success = await BookingModel.updateBookingStatus(bookingId, status);
+        if (success) {
+            res.status(200).json({ message: 'Status updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Booking not found' });
+        }
+    } catch (error) {
+        console.error("Error updating booking status:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getBookingStatistics = async (req, res) => {
+    try {
+        const stats = await BookingModel.getBookingStatistics();
+        res.status(200).json(stats);
+    } catch (error) {
+        console.error("Error fetching booking statistics:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getBookingsByGuest = async (req, res) => {
+    try {
+        const guestId = req.params.guestId;
+        const bookings = await BookingModel.getBookingsByGuest(guestId);
+        res.status(200).json(bookings);
+    } catch (error) {
+        console.error("Error fetching guest bookings:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.cancelBooking = async (req, res) => {
+    try {
+        const bookingId = req.params.id;
+        const guestId = req.body.guestId; // Should be in body or from auth token
+        if (!guestId) {
+            return res.status(400).json({ message: 'Guest ID is required' });
+        }
+        const success = await BookingModel.cancelBooking(bookingId, guestId);
+        if (success) {
+            res.status(200).json({ message: 'Booking cancelled successfully' });
+        } else {
+            res.status(400).json({ message: 'Unable to cancel booking. It may have already been cancelled or you do not have permission.' });
+        }
+    } catch (error) {
+        console.error("Error cancelling booking:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+===== src/controllers/billController.js =====
+const BillModel = require('../models/billModel');
+
+exports.getBillsByGuest = async (req, res) => {
+    try {
+        const guestId = req.params.guestId;
+        const bills = await BillModel.getBillsByGuest(guestId);
+        res.status(200).json(bills);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.payInvoice = async (req, res) => {
+    try {
+        const invoiceNo = req.params.invoiceNo;
+        const paymentMode = req.body.paymentMode || 'Credit Card';
+
+        if (!invoiceNo) {
+            return res.status(400).json({ message: 'Missing invoiceNo' });
+        }
+
+        const result = await BillModel.payInvoice(invoiceNo, paymentMode);
+        if (result.success) {
+            res.status(200).json({ message: 'Payment successful' });
+        } else {
+            res.status(400).json({ message: result.message || 'Payment failed' });
+        }
+    } catch (error) {
+        console.error("Error paying invoice:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getAllBills = async (req, res) => {
+    try {
+        const bills = await BillModel.getAllBills();
+        res.status(200).json(bills);
+    } catch (error) {
+        console.error("Error getting all bills:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+===== src/controllers/reviewController.js =====
+const ReviewModel = require('../models/reviewModel');
+
+exports.createReview = async (req, res) => {
+    try {
+        const { guestId, invoiceNo, rating, comment } = req.body;
+        
+        if (!guestId || !invoiceNo || !rating) {
+            return res.status(400).json({ error: 'Thiếu thông tin đánh giá.' });
+        }
+
+        const review = await ReviewModel.createReview(guestId, invoiceNo, rating, comment);
+        res.status(201).json({ message: 'Review submitted successfully', review });
+    } catch (error) {
+        if (error.message.includes('already reviewed')) {
+            res.status(400).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: error.message });
+        }
+    }
+};
+
+exports.getLatestReviews = async (req, res) => {
+    try {
+        const limit = req.query.limit ? parseInt(req.query.limit) : 5;
+        const reviews = await ReviewModel.getLatestReviews(limit);
+        res.status(200).json(reviews);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+exports.getAverageRating = async (req, res) => {
+    try {
+        const rating = await ReviewModel.getAverageRating();
+        res.status(200).json(rating);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+===== src/controllers/employeeController.js =====
+const EmployeeModel = require('../models/employeeModel');
+const bcrypt = require('bcryptjs');
+
+exports.getAllEmployees = async (req, res) => {
+    try {
+        const employees = await EmployeeModel.getAllEmployees();
+        res.status(200).json(employees);
+    } catch (error) {
+        console.error("Error fetching employees:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.createEmployee = async (req, res) => {
+    try {
+        const { roleId, firstName, lastName, email, password } = req.body;
+        
+        if (!roleId || !firstName || !lastName || !email || !password) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        
+        // Use a default HotelCode of 1 since we only have one hotel
+        const hotelCode = 1;
+
+        const employee = await EmployeeModel.createEmployee(hotelCode, roleId, firstName, lastName, email, hashedPassword);
+        res.status(201).json({ message: 'Employee created successfully', employee });
+    } catch (error) {
+        if (error.message.includes('Violation of UNIQUE KEY constraint')) {
+            return res.status(409).json({ message: 'Email already exists' });
+        }
+        console.error("Error creating employee:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.deleteEmployee = async (req, res) => {
+    try {
+        const employeeId = req.params.id;
+        
+        // Prevent deleting the main admin account (optional safety)
+        if (employeeId == 1) {
+            return res.status(403).json({ message: 'Cannot delete the main system administrator' });
+        }
+
+        await EmployeeModel.deleteEmployee(employeeId);
+        res.status(200).json({ message: 'Employee deleted successfully' });
+    } catch (error) {
+        console.error("Error deleting employee:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getAllRoles = async (req, res) => {
+    try {
+        const roles = await EmployeeModel.getAllRoles();
+        res.status(200).json(roles);
+    } catch (error) {
+        console.error("Error fetching roles:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+===== src/controllers/roomController.js =====
+const RoomModel = require('../models/roomModel');
+
+exports.getAllRooms = async (req, res) => {
+    try {
+        const rooms = await RoomModel.getAllRooms();
+        res.status(200).json(rooms);
+    } catch (error) {
+        console.error("Error in getAllRooms: ", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.searchRooms = async (req, res) => {
+    try {
+        const { arrivalDate, departureDate, guests, numRooms } = req.body;
+        if (!arrivalDate || !departureDate || !guests) {
+            return res.status(400).json({ message: 'Missing parameters' });
+        }
+        const recommendations = await RoomModel.searchRooms(
+            arrivalDate, 
+            departureDate, 
+            parseInt(guests), 
+            numRooms ? parseInt(numRooms) : null
+        );
+        res.status(200).json(recommendations);
+    } catch (error) {
+        console.error("Error searching rooms:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.getAllRoomsWithStatus = async (req, res) => {
+    try {
+        const rooms = await RoomModel.getAllRoomsWithStatus();
+        res.status(200).json(rooms);
+    } catch (error) {
+        console.error("Error in getAllRoomsWithStatus:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.updateRoomStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        if (!status) return res.status(400).json({ message: 'Status is required' });
+        const success = await RoomModel.updateRoomStatus(req.params.roomNo, status);
+        if (success) {
+            res.status(200).json({ message: 'Room status updated successfully' });
+        } else {
+            res.status(404).json({ message: 'Room not found' });
+        }
+    } catch (error) {
+        console.error("Error updating room status:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+===== src/controllers/authController.js =====
+const GuestModel = require('../models/guestModel');
+const EmployeeModel = require('../models/employeeModel');
+
+exports.register = async (req, res) => {
+    try {
+        const { firstName, lastName, email, password, phoneNo } = req.body;
+        if (!firstName || !lastName || !email || !password) {
+            return res.status(400).json({ message: 'All fields are required' });
+        }
+        
+        const guest = await GuestModel.register(firstName, lastName, email, password, phoneNo);
+        res.status(201).json({ message: 'Registration successful', guest });
+    } catch (error) {
+        if (error.message === 'Email already exists') {
+            return res.status(409).json({ message: error.message });
+        }
+        console.error("Register Error:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email and password are required' });
+        }
+        
+        // Try Employee first
+        const employee = await EmployeeModel.login(email, password);
+        if (employee) {
+            return res.status(200).json({ message: 'Login successful', role: 'admin', user: employee });
+        }
+        
+        // Try Guest
+        const guest = await GuestModel.login(email, password);
+        if (guest) {
+            return res.status(200).json({ message: 'Login successful', role: 'guest', user: guest });
+        }
+        
+        // If neither
+        res.status(401).json({ message: 'Invalid credentials' });
+    } catch (error) {
+        console.error("Login Error:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+        const { guestId, ...data } = req.body;
+        if (!guestId) {
+            return res.status(400).json({ message: 'Guest ID is required' });
+        }
+        
+        const updatedGuest = await GuestModel.updateGuest(guestId, data);
+        res.status(200).json({ message: 'Profile updated successfully', user: updatedGuest });
+    } catch (error) {
+        console.error("Update Profile Error:", error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+===== src/routes/authRoutes.js =====
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/authController');
+
+// POST /api/auth/register
+router.post('/register', authController.register);
+
+// POST /api/auth/login
+router.post('/login', authController.login);
+
+// PUT /api/auth/profile
+router.put('/profile', authController.updateProfile);
+
+module.exports = router;
+
+===== src/routes/bookingRoutes.js =====
+const express = require('express');
+const router = express.Router();
+const bookingController = require('../controllers/bookingController');
+const checkPermission = require('../middleware/checkPermission');
+
+// GET /api/bookings (Staff only ideally)
+router.get('/', checkPermission('view_bookings'), bookingController.getAllBookings);
+
+// POST /api/bookings/order (Batch booking)
+router.post('/order', bookingController.createBookingOrder);
+
+router.post('/walkin', checkPermission('manage_bookings'), bookingController.createWalkInBooking);
+
+// POST /api/bookings
+router.post('/', bookingController.createBooking);
+
+// PUT /api/bookings/:id/status
+router.put('/:id/status', checkPermission('manage_bookings'), bookingController.updateBookingStatus);
+
+// GET /api/bookings/statistics
+router.get('/statistics', checkPermission('view_statistics'), bookingController.getBookingStatistics);
+
+// GET /api/bookings/guest/:guestId
+router.get('/guest/:guestId', bookingController.getBookingsByGuest);
+
+// PUT /api/bookings/:id/cancel
+router.put('/:id/cancel', bookingController.cancelBooking);
+
+module.exports = router;
+
+===== src/routes/roomRoutes.js =====
+const express = require('express');
+const router = express.Router();
+const roomController = require('../controllers/roomController');
+const checkPermission = require('../middleware/checkPermission');
+
+// GET /api/rooms
+router.get('/', roomController.getAllRooms);
+
+// POST /api/rooms/search
+router.post('/search', roomController.searchRooms);
+
+// GET /api/rooms/status (staff dashboard)
+router.get('/status', checkPermission('view_rooms'), roomController.getAllRoomsWithStatus);
+
+// PUT /api/rooms/:roomNo/status (staff dashboard)
+router.put('/:roomNo/status', checkPermission('manage_rooms'), roomController.updateRoomStatus);
+
+module.exports = router;
+
+===== src/routes/billRoutes.js =====
+const express = require('express');
+const router = express.Router();
+const billController = require('../controllers/billController');
+const checkPermission = require('../middleware/checkPermission');
+
+// GET /api/bills (staff dashboard — all bills)
+router.get('/', checkPermission('view_bills'), billController.getAllBills);
+
+// GET /api/bills/guest/:guestId
+router.get('/guest/:guestId', billController.getBillsByGuest);
+
+// PUT /api/bills/pay/:invoiceNo
+router.put('/pay/:invoiceNo', checkPermission('manage_bills'), billController.payInvoice);
+
+module.exports = router;
+
+===== src/routes/reviewRoutes.js =====
+const express = require('express');
+const router = express.Router();
+const reviewController = require('../controllers/reviewController');
+
+// POST /api/reviews
+router.post('/', reviewController.createReview);
+
+// GET /api/reviews/latest
+router.get('/latest', reviewController.getLatestReviews);
+
+// GET /api/reviews/average
+router.get('/average', reviewController.getAverageRating);
+
+module.exports = router;
+
+===== src/routes/employeeRoutes.js =====
+const express = require('express');
+const router = express.Router();
+const employeeController = require('../controllers/employeeController');
+const checkPermission = require('../middleware/checkPermission');
+
+// GET /api/employees/roles - Get all available roles (must be before /:id)
+router.get('/roles', checkPermission('manage_employees'), employeeController.getAllRoles);
+
+// GET /api/employees - Get all employees
+router.get('/', checkPermission('manage_employees'), employeeController.getAllEmployees);
+
+// POST /api/employees - Create a new employee
+router.post('/', checkPermission('manage_employees'), employeeController.createEmployee);
+
+// DELETE /api/employees/:id - Delete an employee
+router.delete('/:id', checkPermission('manage_employees'), employeeController.deleteEmployee);
+
+module.exports = router;
+

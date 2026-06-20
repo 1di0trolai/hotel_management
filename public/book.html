@@ -107,6 +107,8 @@
             const combo = params.get('combo');
             const arrival = params.get('arrival');
             const departure = params.get('departure');
+            const adults = parseInt(params.get('adults')) || 1;
+            const children = parseInt(params.get('children')) || 0;
             
             if(!combo || !arrival || !departure) {
                 window.location.href = '/';
@@ -134,6 +136,10 @@
                     ${roomInfoHtml}
                 </div>
                 <div style="margin-bottom: 1rem;">
+                    <span style="color:#888; font-size: 0.85rem;">Guests</span><br>
+                    <strong style="color:white;">${adults} Adults, ${children} Children</strong>
+                </div>
+                <div style="margin-bottom: 1rem;">
                     <span style="color:#888; font-size: 0.85rem;">Check-in (From 14:00)</span><br>
                     <strong style="color:white;">${arrival}</strong>
                 </div>
@@ -149,6 +155,7 @@
                 e.preventDefault();
                 const msg = document.getElementById('msg');
                 const btn = document.getElementById('confirm-btn');
+                const specialReq = document.getElementById('guest-request').value;
 
                 btn.disabled = true;
                 btn.textContent = 'Processing Booking...';
@@ -161,7 +168,10 @@
                             guestId: guest.GuestID, 
                             comboParts: comboParts, 
                             arrivalDate: arrival, 
-                            departureDate: departure 
+                            departureDate: departure,
+                            numAdults: adults,
+                            numChildren: children,
+                            specialReq: specialReq
                         })
                     });
                     const data = await response.json();

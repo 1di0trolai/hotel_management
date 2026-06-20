@@ -1,5 +1,14 @@
 const BillModel = require('../models/billModel');
 
+exports.getAllBills = async (req, res) => {
+    try {
+        const bills = await BillModel.getAllBills();
+        res.status(200).json(bills);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 exports.getBillsByGuest = async (req, res) => {
     try {
         const guestId = req.params.guestId;
@@ -13,10 +22,10 @@ exports.getBillsByGuest = async (req, res) => {
 exports.payInvoice = async (req, res) => {
     try {
         const invoiceNo = req.params.invoiceNo;
-        const paymentMode = req.body.paymentMode || 'Credit Card';
+        const paymentMode = req.body.paymentMode;
 
-        if (!invoiceNo) {
-            return res.status(400).json({ message: 'Missing invoiceNo' });
+        if (!invoiceNo || !paymentMode) {
+            return res.status(400).json({ message: 'Missing invoiceNo or paymentMode' });
         }
 
         const result = await BillModel.payInvoice(invoiceNo, paymentMode);
@@ -31,12 +40,13 @@ exports.payInvoice = async (req, res) => {
     }
 };
 
-exports.getAllBills = async (req, res) => {
+exports.getBillDetails = async (req, res) => {
     try {
-        const bills = await BillModel.getAllBills();
-        res.status(200).json(bills);
+        const invoiceNo = req.params.invoiceNo;
+        const details = await BillModel.getBillDetails(invoiceNo);
+        res.json(details);
     } catch (error) {
-        console.error("Error getting all bills:", error);
+        console.error("Error getting bill details:", error);
         res.status(500).json({ message: 'Internal Server Error' });
     }
 };
