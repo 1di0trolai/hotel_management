@@ -361,7 +361,7 @@
             const canViewBookings = isManager || isRecep;
             const canViewRooms = isManager || isRecep || isHousekeeper;
             const canViewBills = isRecep;
-            const canViewStats = isManager;
+            const canViewStats = isAdmin || isManager;
 
             if (!canViewBookings) document.getElementById('nav-bookings').style.display = 'none';
             if (!canViewRooms) document.getElementById('nav-rooms').style.display = 'none';
@@ -638,14 +638,17 @@
                     const statusClass = 'status-' + status.toLowerCase();
                     let actionHtml = '';
 
-                    if (emp.RoleTitle === 'Manager') {
-                        if (status !== 'Maintenance') {
-                            actionHtml = `<button class="btn-action" style="background:#e74c3c; color:#fff; margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Maintenance')">To Maintenance</button>`;
-                        } else {
+                    if (emp.RoleTitle === 'Manager' || emp.RoleTitle === 'Receptionist') {
+                        if (status === 'Available') {
+                            actionHtml = `<button class="btn-action" style="background:#f39c12; color:#fff; margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Cleaning')">Needs Cleaning</button>`;
+                            actionHtml += `<button class="btn-action" style="background:#e74c3c; color:#fff; margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Maintenance')">To Maintenance</button>`;
+                        } else if (status === 'Cleaning' || status === 'Maintenance') {
                             actionHtml = `<button class="btn-action btn-checkin" style="margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Available')">To Available</button>`;
                         }
                     } else if (emp.RoleTitle === 'Housekeeper') {
-                        actionHtml = `<button class="btn-action btn-checkin" style="margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Available')">Mark Cleaned</button>`;
+                        if (status === 'Cleaning') {
+                            actionHtml = `<button class="btn-action btn-checkin" style="margin-left:10px;" onclick="updateRoomStatus('${r.RoomNo}', 'Available')">Mark Cleaned</button>`;
+                        }
                     }
 
                     const badgeHtml = `<span class="room-status-badge ${statusClass}">${status}</span>`;
