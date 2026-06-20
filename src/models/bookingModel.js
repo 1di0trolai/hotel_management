@@ -6,14 +6,14 @@ class BookingModel {
             const pool = await poolPromise;
             const result = await pool.request().query(`
                 SELECT 
-                    b.InvoiceNo AS BookingID, 
+                    COALESCE(b.InvoiceNo, b.BookingID) AS BookingID, 
                     g.FirstName + ' ' + g.LastName AS GuestName, 
                     g.Email AS GuestEmail,
                     g.PhoneNo AS GuestPhone,
                     STRING_AGG(COALESCE(r.RoomType, b.RoomType) + COALESCE(' (' + b.RoomNo + ')', ' (Unassigned)'), ', ') AS RoomType, 
-                    b.ArrivalDate, 
-                    b.DepartureDate, 
-                    b.BookingStatus,
+                    MIN(b.ArrivalDate) AS ArrivalDate, 
+                    MAX(b.DepartureDate) AS DepartureDate, 
+                    MAX(b.BookingStatus) AS BookingStatus,
                     MAX(b.NumAdults) AS NumAdults, 
                     MAX(b.NumChildren) AS NumChildren, 
                     MAX(b.SpecialReq) AS SpecialReq,
@@ -22,15 +22,12 @@ class BookingModel {
                 INNER JOIN Guest g ON b.GuestID = g.GuestID
                 LEFT JOIN Room r ON b.RoomNo = r.RoomNo
                 GROUP BY 
-                    b.InvoiceNo, 
+                    COALESCE(b.InvoiceNo, b.BookingID), 
                     g.FirstName, 
                     g.LastName,
                     g.Email,
-                    g.PhoneNo,
-                    b.ArrivalDate, 
-                    b.DepartureDate, 
-                    b.BookingStatus
-                ORDER BY b.InvoiceNo DESC
+                    g.PhoneNo
+                ORDER BY COALESCE(b.InvoiceNo, b.BookingID) DESC
             `);
             return result.recordset;
         } catch (error) {

@@ -42,10 +42,25 @@ exports.getAllRoomsWithStatus = async (req, res) => {
 exports.updateRoomStatus = async (req, res) => {
     try {
         const roomNo = req.params.roomNo;
-        const { status } = req.body;
+        const { status, employeeId } = req.body;
         if (!status) {
             return res.status(400).json({ message: 'Status is required' });
         }
+
+        if (employeeId) {
+            const { poolPromise } = require('../config/db');
+            const pool = await poolPromise;
+            const empRes = await pool.request()
+                .input('EmployeeID', employeeId)
+                .query('SELECT r.RoleTitle FROM Employee e JOIN Role r ON e.RoleID = r.RoleID WHERE e.EmployeeID = @EmployeeID');
+            if (empRes.recordset.length > 0) {
+                const role = empRes.recordset[0].RoleTitle;
+                if (role === 'Housekeeper' && !['Available', 'Cleaning'].includes(status)) {
+                    return res.status(403).json({ message: `Housekeeper cannot set room status to '${status}'.` });
+                }
+            }
+        }
+
         const success = await RoomModel.updateRoomStatus(roomNo, status);
         if (success) {
             res.status(200).json({ message: 'Status updated successfully' });
