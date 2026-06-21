@@ -287,7 +287,14 @@
                 
                 <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-top: 2rem;">
                     <div style="background: var(--glass-bg); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border);">
-                        <h3 style="color: #fff; margin-bottom: 1rem;">Revenue Trend (Monthly)</h3>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                            <h3 style="color: #fff; margin:0;" id="revenue-trend-title">Revenue Trend (Monthly)</h3>
+                            <select id="revenue-trend-filter" style="padding:0.3rem; border-radius:4px; border:1px solid var(--glass-border); background:rgba(0,0,0,0.3); color:#fff;" onchange="loadRevenueDashboard()">
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly" selected>Monthly</option>
+                                <option value="yearly">Yearly</option>
+                            </select>
+                        </div>
                         <div style="position: relative; height: 300px; width: 100%;">
                             <canvas id="revenueTrendChart"></canvas>
                         </div>

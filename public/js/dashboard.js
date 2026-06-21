@@ -143,19 +143,61 @@ let emp;
                     if (statusCounts[st] !== undefined) statusCounts[st]++;
                 });
                 
-                // Revenue Trend (Monthly - Current Year)
+                // Revenue Trend Logic
+                const filter = document.getElementById('revenue-trend-filter') ? document.getElementById('revenue-trend-filter').value : 'monthly';
                 const currentYear = new Date().getFullYear();
-                const trendLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                const trendData = new Array(12).fill(0);
-                
-                paidBills.forEach(b => {
-                    if (!b.PaymentDate) return;
-                    const year = parseInt(b.PaymentDate.substring(0, 4));
-                    const monthIndex = parseInt(b.PaymentDate.substring(5, 7)) - 1;
-                    if (year === currentYear && monthIndex >= 0 && monthIndex < 12) {
-                        trendData[monthIndex] += (Number(b.TotalAmount) || 0);
+                let trendLabels = [];
+                let trendData = [];
+                let datasetLabel = 'Revenue ($)';
+
+                if (filter === 'weekly') {
+                    datasetLabel = 'Daily Revenue ($)';
+                    if (document.getElementById('revenue-trend-title')) document.getElementById('revenue-trend-title').textContent = 'Revenue Trend (Last 7 Days)';
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    for (let i = 6; i >= 0; i--) {
+                        const d = new Date(today);
+                        d.setDate(today.getDate() - i);
+                        trendLabels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                        trendData.push(0);
                     }
-                });
+                    paidBills.forEach(b => {
+                        if (!b.PaymentDate) return;
+                        const bd = new Date(b.PaymentDate);
+                        const label = bd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const idx = trendLabels.indexOf(label);
+                        if (idx >= 0) {
+                            trendData[idx] += (Number(b.TotalAmount) || 0);
+                        }
+                    });
+                } else if (filter === 'yearly') {
+                    datasetLabel = 'Yearly Revenue ($)';
+                    if (document.getElementById('revenue-trend-title')) document.getElementById('revenue-trend-title').textContent = 'Revenue Trend (Yearly)';
+                    for (let i = 4; i >= 0; i--) {
+                        trendLabels.push((currentYear - i).toString());
+                        trendData.push(0);
+                    }
+                    paidBills.forEach(b => {
+                        if (!b.PaymentDate) return;
+                        const year = parseInt(b.PaymentDate.substring(0, 4));
+                        const idx = trendLabels.indexOf(year.toString());
+                        if (idx >= 0) trendData[idx] += (Number(b.TotalAmount) || 0);
+                    });
+                } else {
+                    datasetLabel = 'Monthly Revenue ($)';
+                    if (document.getElementById('revenue-trend-title')) document.getElementById('revenue-trend-title').textContent = 'Revenue Trend (Monthly)';
+                    trendLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    trendData = new Array(12).fill(0);
+                    
+                    paidBills.forEach(b => {
+                        if (!b.PaymentDate) return;
+                        const year = parseInt(b.PaymentDate.substring(0, 4));
+                        const monthIndex = parseInt(b.PaymentDate.substring(5, 7)) - 1;
+                        if (year === currentYear && monthIndex >= 0 && monthIndex < 12) {
+                            trendData[monthIndex] += (Number(b.TotalAmount) || 0);
+                        }
+                    });
+                }
                 
                 // 3. Render Charts
                 const ctxTrend = document.getElementById('revenueTrendChart').getContext('2d');
@@ -165,7 +207,7 @@ let emp;
                     data: {
                         labels: trendLabels,
                         datasets: [{
-                            label: 'Daily Revenue ($)',
+                            label: datasetLabel,
                             data: trendData,
                             borderColor: '#cba052',
                             backgroundColor: 'rgba(203, 160, 82, 0.2)',
