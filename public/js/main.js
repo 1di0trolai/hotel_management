@@ -95,16 +95,33 @@ function initSearchBar() {
     const today = new Date();
     const tomorrow = new Date();
     tomorrow.setDate(today.getDate() + 1);
+    const nextYear = new Date();
+    nextYear.setFullYear(today.getFullYear() + 1);
 
-    arrivalInput.value = today.toISOString().split('T')[0];
-    departureInput.value = tomorrow.toISOString().split('T')[0];
+    const todayStr = today.toISOString().split('T')[0];
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    
+    arrivalInput.value = todayStr;
+    departureInput.value = tomorrowStr;
 
-    // Ensure departure > arrival
-    arrivalInput.addEventListener('change', () => {
-        if (departureInput.value <= arrivalInput.value) {
-            let nextDay = new Date(arrivalInput.value);
-            nextDay.setDate(nextDay.getDate() + 1);
-            departureInput.value = nextDay.toISOString().split('T')[0];
+    // Initialize Flatpickr
+    flatpickr("#date-range-picker", {
+        mode: "range",
+        minDate: "today",
+        maxDate: nextYear,
+        showMonths: 2,
+        dateFormat: "Y-m-d",
+        defaultDate: [todayStr, tomorrowStr],
+        onChange: function(selectedDates, dateStr, instance) {
+            if (selectedDates.length === 2) {
+                // Formatting back to YYYY-MM-DD for consistency and API expectations
+                // By default flatpickr uses local timezone so formatting this way avoids off-by-one errors
+                const arr = new Date(selectedDates[0].getTime() - (selectedDates[0].getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                const dep = new Date(selectedDates[1].getTime() - (selectedDates[1].getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+                
+                arrivalInput.value = arr;
+                departureInput.value = dep;
+            }
         }
     });
 
@@ -112,6 +129,17 @@ function initSearchBar() {
         e.preventDefault();
         const arrivalDate = arrivalInput.value;
         const departureDate = departureInput.value;
+
+        if (!arrivalDate || !departureDate || arrivalDate === departureDate) {
+            alert('Please select a valid date range (check-in and check-out)!');
+            return;
+        }
+
+        if (departureDate <= arrivalDate) {
+            alert('Departure date must be after arrival date!');
+            return;
+        }
+
         const guests = window.guestCounts.adults + window.guestCounts.children;
         await searchRooms(arrivalDate, departureDate, guests);
     });
